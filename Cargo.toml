@@ -1,0 +1,27 @@
+[package]
+name = "soroban-poseidon"
+version = "0.1.0"
+authors = ["Stellar Development Foundation <info@stellar.org>"]
+edition = "2021"
+rust-version = "1.84.0"
+license = "Apache-2.0"
+description = "Poseidon and Poseidon2 cryptographic hash functions for Soroban smart contracts"
+homepage = "https://github.com/stellar/rs-soroban-poseidon"
+repository = "https://github.com/stellar/rs-soroban-poseidon"
+documentation = "https://docs.rs/soroban-poseidon"
+readme = "README.md"
+keywords = ["soroban", "stellar", "cryptography", "poseidon", "poseidon2", "hash"]
+categories = ["cryptography", "no-std"]
+
+[lib]
+doctest = true
+
+[dependencies]
+soroban-sdk = { git = "https://github.com/stellar/rs-soroban-sdk", branch = "release/v25-preview", default-features = false, features = ["hazmat-crypto"] }
+
+[dev-dependencies]
+soroban-sdk = { git = "https://github.com/stellar/rs-soroban-sdk", branch = "release/v25-preview", features = ["hazmat-crypto", "testutils"] }
+
+[features]
+default = []
+testutils = ["soroban-sdk/testutils"]
