@@ -1,10 +1,12 @@
-use super::params::{
-    get_mat_diag_bls12_381_t_2, get_mat_diag_bls12_381_t_3, get_mat_diag_bls12_381_t_4,
-    get_mat_diag_bn254_t_2, get_mat_diag_bn254_t_3, get_mat_diag_bn254_t_4, get_rc_bls12_381_t_2,
-    get_rc_bls12_381_t_3, get_rc_bls12_381_t_4, get_rc_bn254_t_2, get_rc_bn254_t_3,
-    get_rc_bn254_t_4, SBOX_D,
+use crate::{
+    poseidon2::params::{
+        get_mat_diag_bls12_381_t_2, get_mat_diag_bls12_381_t_3, get_mat_diag_bls12_381_t_4,
+        get_mat_diag_bn254_t_2, get_mat_diag_bn254_t_3, get_mat_diag_bn254_t_4,
+        get_rc_bls12_381_t_2, get_rc_bls12_381_t_3, get_rc_bls12_381_t_4, get_rc_bn254_t_2,
+        get_rc_bn254_t_3, get_rc_bn254_t_4, SBOX_D,
+    },
+    Field,
 };
-use crate::Field;
 use soroban_sdk::{
     crypto::{bls12_381::Fr as BlsScalar, BnScalar},
     vec, Env, Vec, U256,
@@ -20,6 +22,9 @@ pub trait Poseidon2Config<const T: u32, F: Field> {
     fn get_rc(e: &Env) -> Vec<Vec<U256>>;
 }
 
+// Internal struct storing the Poseidon2 constants, in the future we can make
+// this a #[contracttype], which can be stored as contract data (to reduce the
+// actual contract size)
 pub(crate) struct Poseidon2Params {
     pub rounds_f: u32,
     pub rounds_p: u32,
@@ -27,6 +32,26 @@ pub(crate) struct Poseidon2Params {
     pub rc: Vec<Vec<U256>>,
 }
 
+/// A Poseidon2 sponge configured for a specific state size `T` and field `F`.
+///
+/// This is a single-absorb, single-squeeze sponge. The primary benefit of
+/// creating a sponge instance is to reuse the pre-computed parameters (MDS
+/// matrix diagonal and round constants) across multiple independent hash
+/// computations, avoiding repeated parameter initialization.
+///
+/// **Note**: Each call to [`compute_hash`](Self::compute_hash) resets the
+/// internal state and computes a fresh hash. The sponge does not accumulate
+/// state between calls.
+///
+/// # Example
+/// ```ignore
+/// // Create sponge once (initializes parameters)
+/// let mut sponge = Poseidon2Sponge::<4, BnScalar>::new(&env);
+///
+/// // Compute multiple independent hashes, reusing the same parameters
+/// let hash1 = sponge.compute_hash(&inputs1);
+/// let hash2 = sponge.compute_hash(&inputs2);
+/// ```
 pub struct Poseidon2Sponge<const T: u32, F: Field> {
     env: Env,
     state: Vec<U256>,
@@ -163,10 +188,22 @@ where
         self.state.get_unchecked(0)
     }
 
-    /// Hashes the inputs using the Poseidon2 sponge.
+    /// Computes a fresh Poseidon2 hash of the inputs.
     ///
-    /// The capacity element is initialized to `input.len() << 64`, matching noir's Poseidon2.
-    pub fn hash(&mut self, inputs: &Vec<U256>) -> U256 {
+    /// This method resets the sponge state and computes a new hash from
+    /// scratch. It does **not** accumulate state from previous calls, i.e. each
+    /// invocation is independent. The benefit of calling this on an existing
+    /// sponge (vs creating a new one) is reusing the pre-initialized
+    /// parameters.
+    ///
+    /// The capacity element is initialized to `input.len() << 64`, matching
+    /// [noir's Poseidon2
+    /// implementation](https://github.com/noir-lang/noir/blob/master/noir_stdlib/src/hash/poseidon2.nr).
+    ///
+    /// # Panics
+    /// Panics if `inputs.len() > RATE` (i.e., `T - 1`). For larger inputs,
+    /// multi-round absorption would be needed (not yet implemented).
+    pub fn compute_hash(&mut self, inputs: &Vec<U256>) -> U256 {
         // The initial value for the capacity element: input.len() * 2^64 for Poseidon2
         let iv = U256::from_u128(&self.env, (inputs.len() as u128) << 64);
         self.reset_state(iv);

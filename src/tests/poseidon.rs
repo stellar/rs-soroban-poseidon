@@ -1,5 +1,10 @@
-use crate::poseidon::params::{get_mds_bn254_t_3, get_rc_bn254_t_3, SBOX_D};
-use crate::poseidon::PoseidonSponge;
+use crate::{
+    poseidon::{
+        params::{get_mds_bn254_t_3, get_rc_bn254_t_3, SBOX_D},
+        PoseidonSponge,
+    },
+    poseidon_hash,
+};
 use soroban_sdk::{
     bytesn,
     crypto::{bls12_381::Fr as BlsScalar, BnScalar},
@@ -45,7 +50,7 @@ fn test_poseidon_bn254_hash_1_2() {
     );
 
     let mut sponge = PoseidonSponge::<3, BnScalar>::new(&env);
-    let result = sponge.hash(&inputs);
+    let result = sponge.compute_hash(&inputs);
 
     assert_eq!(result, expected);
 }
@@ -87,7 +92,7 @@ fn test_poseidon_bn254_hash_3_4() {
     );
 
     let mut sponge = PoseidonSponge::<3, BnScalar>::new(&env);
-    let result = sponge.hash(&inputs);
+    let result = sponge.compute_hash(&inputs);
 
     assert_eq!(result, expected);
 }
@@ -121,7 +126,7 @@ fn test_poseidon_bn254_hash_1() {
     );
 
     let mut sponge = PoseidonSponge::<2, BnScalar>::new(&env);
-    let result = sponge.hash(&inputs);
+    let result = sponge.compute_hash(&inputs);
 
     assert_eq!(result, expected);
 }
@@ -171,7 +176,7 @@ fn test_poseidon_bn254_hash_1_2_3() {
     );
 
     let mut sponge = PoseidonSponge::<4, BnScalar>::new(&env);
-    let result = sponge.hash(&inputs);
+    let result = sponge.compute_hash(&inputs);
 
     assert_eq!(result, expected);
 }
@@ -229,7 +234,7 @@ fn test_poseidon_bn254_hash_1_2_3_4() {
     );
 
     let mut sponge = PoseidonSponge::<5, BnScalar>::new(&env);
-    let result = sponge.hash(&inputs);
+    let result = sponge.compute_hash(&inputs);
 
     assert_eq!(result, expected);
 }
@@ -295,7 +300,7 @@ fn test_poseidon_bn254_hash_1_2_3_4_5() {
     );
 
     let mut sponge = PoseidonSponge::<6, BnScalar>::new(&env);
-    let result = sponge.hash(&inputs);
+    let result = sponge.compute_hash(&inputs);
 
     assert_eq!(result, expected);
 }
@@ -336,7 +341,7 @@ fn test_poseidon_bls12_381_hash_1_2() {
     );
 
     let mut sponge = PoseidonSponge::<3, BlsScalar>::new(&env);
-    let result = sponge.hash(&inputs);
+    let result = sponge.compute_hash(&inputs);
 
     assert_eq!(result, expected);
 }
@@ -370,7 +375,7 @@ fn test_poseidon_bls12_381_hash_1() {
     );
 
     let mut sponge = PoseidonSponge::<2, BlsScalar>::new(&env);
-    let result = sponge.hash(&inputs);
+    let result = sponge.compute_hash(&inputs);
 
     assert_eq!(result, expected);
 }
@@ -420,7 +425,7 @@ fn test_poseidon_bls12_381_hash_1_2_3() {
     );
 
     let mut sponge = PoseidonSponge::<4, BlsScalar>::new(&env);
-    let result = sponge.hash(&inputs);
+    let result = sponge.compute_hash(&inputs);
 
     assert_eq!(result, expected);
 }
@@ -478,7 +483,7 @@ fn test_poseidon_bls12_381_hash_1_2_3_4() {
     );
 
     let mut sponge = PoseidonSponge::<5, BlsScalar>::new(&env);
-    let result = sponge.hash(&inputs);
+    let result = sponge.compute_hash(&inputs);
 
     assert_eq!(result, expected);
 }
@@ -544,7 +549,7 @@ fn test_poseidon_bls12_381_hash_1_2_3_4_5() {
     );
 
     let mut sponge = PoseidonSponge::<6, BlsScalar>::new(&env);
-    let result = sponge.hash(&inputs);
+    let result = sponge.compute_hash(&inputs);
 
     assert_eq!(result, expected);
 }
@@ -601,4 +606,127 @@ fn test_poseidon_permutation_t3() {
 
     assert_eq!(result.len(), 3);
     assert_eq!(result.get_unchecked(0), expected_0);
+}
+
+// ============================================================================
+// Tests for poseidon_hash top-level function
+// ============================================================================
+
+#[test]
+fn test_poseidon_hash_bn254_t3() {
+    let env = Env::default();
+
+    let inputs = vec![&env, U256::from_u32(&env, 1), U256::from_u32(&env, 2)];
+
+    let expected = U256::from_be_bytes(
+        &env,
+        &bytesn!(
+            &env,
+            0x115cc0f5e7d690413df64c6b9662e9cf2a3617f2743245519e19607a4417189a
+        )
+        .into(),
+    );
+
+    let result = poseidon_hash::<3, BnScalar>(&env, &inputs);
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn test_poseidon_hash_bls12_381_t3() {
+    let env = Env::default();
+
+    let inputs = vec![&env, U256::from_u32(&env, 1), U256::from_u32(&env, 2)];
+
+    let expected = U256::from_be_bytes(
+        &env,
+        &bytesn!(
+            &env,
+            0x3fb8310b0e962b75bffec5f9cfcbf3f965a7b1d2dcac8d95ccb13d434e08e5fa
+        )
+        .into(),
+    );
+
+    let result = poseidon_hash::<3, BlsScalar>(&env, &inputs);
+    assert_eq!(result, expected);
+}
+
+// ============================================================================
+// Tests for sponge reuse (repeated hashing)
+// ============================================================================
+
+#[test]
+fn test_poseidon_sponge_reuse() {
+    let env = Env::default();
+
+    let mut sponge = PoseidonSponge::<3, BnScalar>::new(&env);
+
+    let inputs1 = vec![&env, U256::from_u32(&env, 1), U256::from_u32(&env, 2)];
+    let inputs2 = vec![&env, U256::from_u32(&env, 3), U256::from_u32(&env, 4)];
+
+    // Expected outputs
+    let expected1 = U256::from_be_bytes(
+        &env,
+        &bytesn!(
+            &env,
+            0x115cc0f5e7d690413df64c6b9662e9cf2a3617f2743245519e19607a4417189a
+        )
+        .into(),
+    );
+    let expected2 = U256::from_be_bytes(
+        &env,
+        &bytesn!(
+            &env,
+            0x20a3af0435914ccd84b806164531b0cd36e37d4efb93efab76913a93e1f30996
+        )
+        .into(),
+    );
+
+    // First hash
+    let result1 = sponge.compute_hash(&inputs1);
+    assert_eq!(result1, expected1);
+
+    // Second hash - should be independent
+    let result2 = sponge.compute_hash(&inputs2);
+    assert_eq!(result2, expected2);
+
+    // Hash inputs1 again - should get the same result as before
+    let result1_again = sponge.compute_hash(&inputs1);
+    assert_eq!(result1_again, expected1);
+}
+
+#[test]
+fn test_poseidon_sponge_matches_hash_function() {
+    let env = Env::default();
+
+    let inputs = vec![&env, U256::from_u32(&env, 1), U256::from_u32(&env, 2)];
+
+    // Using top-level function
+    let hash_result = poseidon_hash::<3, BnScalar>(&env, &inputs);
+
+    // Using sponge directly
+    let mut sponge = PoseidonSponge::<3, BnScalar>::new(&env);
+    let sponge_result = sponge.compute_hash(&inputs);
+
+    assert_eq!(hash_result, sponge_result);
+}
+
+// ============================================================================
+// Failure mode tests
+// ============================================================================
+
+#[test]
+#[should_panic(expected = "assertion failed")]
+fn test_poseidon_sponge_inputs_exceed_rate() {
+    let env = Env::default();
+
+    // t=3 means rate=2, so 3 inputs should panic
+    let inputs = vec![
+        &env,
+        U256::from_u32(&env, 1),
+        U256::from_u32(&env, 2),
+        U256::from_u32(&env, 3),
+    ];
+
+    let mut sponge = PoseidonSponge::<3, BnScalar>::new(&env);
+    let _ = sponge.compute_hash(&inputs); // Should panic
 }

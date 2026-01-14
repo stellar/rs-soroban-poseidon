@@ -1,11 +1,20 @@
-use crate::poseidon2::params::{
-    get_mat_diag_bls12_381_t_2, get_mat_diag_bls12_381_t_3, get_mat_diag_bls12_381_t_4,
-    get_mat_diag_bn254_t_2, get_mat_diag_bn254_t_3, get_mat_diag_bn254_t_4, get_rc_bls12_381_t_2,
-    get_rc_bls12_381_t_3, get_rc_bls12_381_t_4, get_rc_bn254_t_2, get_rc_bn254_t_3,
-    get_rc_bn254_t_4, SBOX_D,
+use crate::{
+    poseidon2::{
+        params::{
+            get_mat_diag_bls12_381_t_2, get_mat_diag_bls12_381_t_3, get_mat_diag_bls12_381_t_4,
+            get_mat_diag_bn254_t_2, get_mat_diag_bn254_t_3, get_mat_diag_bn254_t_4,
+            get_rc_bls12_381_t_2, get_rc_bls12_381_t_3, get_rc_bls12_381_t_4, get_rc_bn254_t_2,
+            get_rc_bn254_t_3, get_rc_bn254_t_4, SBOX_D,
+        },
+        Poseidon2Sponge,
+    },
+    poseidon2_hash,
 };
-use crate::poseidon2::Poseidon2Sponge;
-use soroban_sdk::{bytesn, crypto::BnScalar, vec, Env, Symbol, U256};
+use soroban_sdk::{
+    bytesn,
+    crypto::{bls12_381::Fr as BlsScalar, BnScalar},
+    vec, Env, Symbol, U256,
+};
 
 // This test matches barretenberg test case for hashing 4 inputs: https://github.com/AztecProtocol/aztec-packages/blob/b95e36c6c1a5a84ba488c720189102ecbb052d2c/barretenberg/cpp/src/barretenberg/crypto/poseidon2/poseidon2.test.cpp#L34
 // TODO: Re-enable once multi-round absorption is implemented
@@ -42,7 +51,7 @@ fn test_poseidon2_hash() {
     );
 
     let mut sponge = Poseidon2Sponge::<4, BnScalar>::new(&env); // t=4, rate=3 matches noir
-    let result = sponge.hash(&inputs);
+    let result = sponge.compute_hash(&inputs);
 
     assert_eq!(result, expected);
 }
@@ -552,4 +561,228 @@ fn test_poseidon2_permutation_bls12_381_t3() {
     ];
 
     assert_eq!(result, expected);
+}
+
+// ============================================================================
+// Tests for Poseidon2Sponge::compute_hash
+// ============================================================================
+
+#[test]
+fn test_poseidon2_sponge_compute_hash_bn254_t4() {
+    let env = Env::default();
+
+    // 3 inputs fit in rate=3 for t=4
+    let inputs = vec![
+        &env,
+        U256::from_u32(&env, 1),
+        U256::from_u32(&env, 2),
+        U256::from_u32(&env, 3),
+    ];
+
+    let mut sponge = Poseidon2Sponge::<4, BnScalar>::new(&env);
+    let result = sponge.compute_hash(&inputs);
+
+    // Result should be deterministic - hash again and compare
+    let result2 = sponge.compute_hash(&inputs);
+    assert_eq!(result, result2);
+}
+
+#[test]
+fn test_poseidon2_sponge_compute_hash_bn254_t3() {
+    let env = Env::default();
+
+    // 2 inputs fit in rate=2 for t=3
+    let inputs = vec![&env, U256::from_u32(&env, 1), U256::from_u32(&env, 2)];
+
+    let mut sponge = Poseidon2Sponge::<3, BnScalar>::new(&env);
+    let result = sponge.compute_hash(&inputs);
+
+    // Result should be deterministic
+    let result2 = sponge.compute_hash(&inputs);
+    assert_eq!(result, result2);
+}
+
+#[test]
+fn test_poseidon2_sponge_compute_hash_bn254_t2() {
+    let env = Env::default();
+
+    // 1 input fits in rate=1 for t=2
+    let inputs = vec![&env, U256::from_u32(&env, 1)];
+
+    let mut sponge = Poseidon2Sponge::<2, BnScalar>::new(&env);
+    let result = sponge.compute_hash(&inputs);
+
+    // Result should be deterministic
+    let result2 = sponge.compute_hash(&inputs);
+    assert_eq!(result, result2);
+}
+
+#[test]
+fn test_poseidon2_sponge_compute_hash_bls12_381_t4() {
+    let env = Env::default();
+
+    let inputs = vec![
+        &env,
+        U256::from_u32(&env, 1),
+        U256::from_u32(&env, 2),
+        U256::from_u32(&env, 3),
+    ];
+
+    let mut sponge = Poseidon2Sponge::<4, BlsScalar>::new(&env);
+    let result = sponge.compute_hash(&inputs);
+
+    // Result should be deterministic
+    let result2 = sponge.compute_hash(&inputs);
+    assert_eq!(result, result2);
+}
+
+// ============================================================================
+// Tests for poseidon2_hash top-level function
+// ============================================================================
+
+#[test]
+fn test_poseidon2_hash_bn254_t4() {
+    let env = Env::default();
+
+    let inputs = vec![
+        &env,
+        U256::from_u32(&env, 1),
+        U256::from_u32(&env, 2),
+        U256::from_u32(&env, 3),
+    ];
+
+    // Top-level function should work
+    let result = poseidon2_hash::<4, BnScalar>(&env, &inputs);
+
+    // Should match sponge directly
+    let mut sponge = Poseidon2Sponge::<4, BnScalar>::new(&env);
+    let sponge_result = sponge.compute_hash(&inputs);
+
+    assert_eq!(result, sponge_result);
+}
+
+#[test]
+fn test_poseidon2_hash_bls12_381_t4() {
+    let env = Env::default();
+
+    let inputs = vec![
+        &env,
+        U256::from_u32(&env, 1),
+        U256::from_u32(&env, 2),
+        U256::from_u32(&env, 3),
+    ];
+
+    let result = poseidon2_hash::<4, BlsScalar>(&env, &inputs);
+
+    // Should match sponge directly
+    let mut sponge = Poseidon2Sponge::<4, BlsScalar>::new(&env);
+    let sponge_result = sponge.compute_hash(&inputs);
+
+    assert_eq!(result, sponge_result);
+}
+
+#[test]
+fn test_poseidon2_hash_bn254_t2() {
+    let env = Env::default();
+
+    let inputs = vec![&env, U256::from_u32(&env, 1)];
+
+    let result = poseidon2_hash::<2, BnScalar>(&env, &inputs);
+
+    let mut sponge = Poseidon2Sponge::<2, BnScalar>::new(&env);
+    let sponge_result = sponge.compute_hash(&inputs);
+
+    assert_eq!(result, sponge_result);
+}
+
+#[test]
+fn test_poseidon2_hash_bn254_t3() {
+    let env = Env::default();
+
+    let inputs = vec![&env, U256::from_u32(&env, 1), U256::from_u32(&env, 2)];
+
+    let result = poseidon2_hash::<3, BnScalar>(&env, &inputs);
+
+    let mut sponge = Poseidon2Sponge::<3, BnScalar>::new(&env);
+    let sponge_result = sponge.compute_hash(&inputs);
+
+    assert_eq!(result, sponge_result);
+}
+
+// ============================================================================
+// Tests for sponge reuse (repeated hashing)
+// ============================================================================
+
+#[test]
+fn test_poseidon2_sponge_reuse() {
+    let env = Env::default();
+
+    let mut sponge = Poseidon2Sponge::<4, BnScalar>::new(&env);
+
+    let inputs1 = vec![
+        &env,
+        U256::from_u32(&env, 1),
+        U256::from_u32(&env, 2),
+        U256::from_u32(&env, 3),
+    ];
+    let inputs2 = vec![
+        &env,
+        U256::from_u32(&env, 4),
+        U256::from_u32(&env, 5),
+        U256::from_u32(&env, 6),
+    ];
+
+    // First hash
+    let result1 = sponge.compute_hash(&inputs1);
+
+    // Second hash - should be independent (different inputs, different result)
+    let result2 = sponge.compute_hash(&inputs2);
+    assert_ne!(result1, result2);
+
+    // Hash inputs1 again - should get the same result as the first time
+    let result1_again = sponge.compute_hash(&inputs1);
+    assert_eq!(result1, result1_again);
+}
+
+#[test]
+fn test_poseidon2_sponge_matches_hash_function() {
+    let env = Env::default();
+
+    let inputs = vec![
+        &env,
+        U256::from_u32(&env, 1),
+        U256::from_u32(&env, 2),
+        U256::from_u32(&env, 3),
+    ];
+
+    // Using top-level function
+    let hash_result = poseidon2_hash::<4, BnScalar>(&env, &inputs);
+
+    // Using sponge directly
+    let mut sponge = Poseidon2Sponge::<4, BnScalar>::new(&env);
+    let sponge_result = sponge.compute_hash(&inputs);
+
+    assert_eq!(hash_result, sponge_result);
+}
+
+// ============================================================================
+// Failure mode tests
+// ============================================================================
+
+#[test]
+#[should_panic(expected = "assertion failed")]
+fn test_poseidon2_sponge_inputs_exceed_rate_t4() {
+    let env = Env::default();
+
+    // t=4 means rate=3, so 4 inputs should panic
+    let inputs = vec![
+        &env,
+        U256::from_u32(&env, 1),
+        U256::from_u32(&env, 2),
+        U256::from_u32(&env, 3),
+        U256::from_u32(&env, 4),
+    ];
+
+    let mut sponge = Poseidon2Sponge::<4, BnScalar>::new(&env);
+    let _ = sponge.compute_hash(&inputs); // Should panic
 }
