@@ -6,4 +6,4 @@
 pub(crate) mod params;
 mod sponge;
 
-pub use sponge::{hash, Poseidon2Config, Poseidon2Sponge};
+pub use sponge::{Poseidon2Config, Poseidon2Sponge};

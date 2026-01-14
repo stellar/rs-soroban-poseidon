@@ -434,7 +434,7 @@ pub(crate) fn get_rc_bn254_t_2(e: &Env) -> Vec<Vec<U256>> {
 }
 
 #[rustfmt::skip]
-pub(crate) fn get_rc_bn254_t_3(e: &Env) -> Vec<Vec<U256>> {     
+pub(crate) fn get_rc_bn254_t_3(e: &Env) -> Vec<Vec<U256>> {
     vec![e,
         vec![e,
             U256::from_be_bytes(e, &bytesn!(e, 0x0ee9a592ba9a9518d05986d656f40c2114c4993c11bb29938d21d47304cd8e6e).into()),
@@ -765,7 +765,7 @@ pub(crate) fn get_rc_bn254_t_3(e: &Env) -> Vec<Vec<U256>> {
 }
 
 #[rustfmt::skip]
-pub(crate) fn get_rc_bn254_t_4(e: &Env) -> Vec<Vec<U256>> {    
+pub(crate) fn get_rc_bn254_t_4(e: &Env) -> Vec<Vec<U256>> {
     vec![e,
         vec![e,
             U256::from_be_bytes(e, &bytesn!(e, 0x19b849f69450b06848da1d39bd5e4a4302bb86744edc26238b0878e269ed23e5).into()),
@@ -1155,7 +1155,7 @@ pub(crate) fn get_rc_bn254_t_4(e: &Env) -> Vec<Vec<U256>> {
 }
 
 #[rustfmt::skip]
-pub(crate) fn get_rc_bn254_t_5(e: &Env) -> Vec<Vec<U256>> {    
+pub(crate) fn get_rc_bn254_t_5(e: &Env) -> Vec<Vec<U256>> {
     vec![e,
         vec![e,
             U256::from_be_bytes(e, &bytesn!(e, 0x0eb544fee2815dda7f53e29ccac98ed7d889bb4ebd47c3864f3c2bd81a6da891).into()),
@@ -1637,7 +1637,7 @@ pub(crate) fn get_rc_bn254_t_5(e: &Env) -> Vec<Vec<U256>> {
 }
 
 #[rustfmt::skip]
-pub(crate) fn get_rc_bn254_t_6(e: &Env) -> Vec<Vec<U256>> {    
+pub(crate) fn get_rc_bn254_t_6(e: &Env) -> Vec<Vec<U256>> {
     vec![e,
         vec![e,
             U256::from_be_bytes(e, &bytesn!(e, 0x1448614598e00f98e7ae7dea45fbd83bd968653ef8390cde2e86b706ad40c651).into()),
@@ -2197,7 +2197,7 @@ pub(crate) fn get_rc_bn254_t_6(e: &Env) -> Vec<Vec<U256>> {
 // internally (which is 56 for t={2,3,4}). The parameter choices also match
 // https://github.com/jmagan/poseidon-bls12381-circom/tree/main
 #[rustfmt::skip]
-pub(crate) fn get_mds_bls12_381_t_2(e: &Env) -> Vec<Vec<U256>> {    
+pub(crate) fn get_mds_bls12_381_t_2(e: &Env) -> Vec<Vec<U256>> {
     vec![e,
         vec![e,
             U256::from_be_bytes(e, &bytesn!(e, 0x1e6d0cd936714f2124fc4c78321266174fe2855e689c6511a36ecadc3cccc268).into()),
@@ -2211,7 +2211,7 @@ pub(crate) fn get_mds_bls12_381_t_2(e: &Env) -> Vec<Vec<U256>> {
 }
 
 #[rustfmt::skip]
-pub(crate) fn get_mds_bls12_381_t_3(e: &Env) -> Vec<Vec<U256>> {    
+pub(crate) fn get_mds_bls12_381_t_3(e: &Env) -> Vec<Vec<U256>> {
     vec![e,
         vec![e,
             U256::from_be_bytes(e, &bytesn!(e, 0x44d46fa01da5117cf3fbdba05adc0a64af6c34a56f1e3c6cba01b7a582af8839).into()),
@@ -2232,7 +2232,7 @@ pub(crate) fn get_mds_bls12_381_t_3(e: &Env) -> Vec<Vec<U256>> {
 }
 
 #[rustfmt::skip]
-pub(crate) fn get_mds_bls12_381_t_4(e: &Env) -> Vec<Vec<U256>> {    
+pub(crate) fn get_mds_bls12_381_t_4(e: &Env) -> Vec<Vec<U256>> {
     vec![e,
         vec![e,
             U256::from_be_bytes(e, &bytesn!(e, 0x298b7c2407511920d8e2f173fdf03c8c80d841a04def19fcfe701369758527dc).into()),
@@ -2262,7 +2262,7 @@ pub(crate) fn get_mds_bls12_381_t_4(e: &Env) -> Vec<Vec<U256>> {
 }
 
 #[rustfmt::skip]
-pub(crate) fn get_mds_bls12_381_t_5(e: &Env) -> Vec<Vec<U256>> {    
+pub(crate) fn get_mds_bls12_381_t_5(e: &Env) -> Vec<Vec<U256>> {
     vec![e,
         vec![e,
             U256::from_be_bytes(e, &bytesn!(e, 0x5edc4de43ff07c60ace8f91ac726180f38604b5bb2f2ab2c27aa2a4d53cf7081).into()),
@@ -2303,7 +2303,7 @@ pub(crate) fn get_mds_bls12_381_t_5(e: &Env) -> Vec<Vec<U256>> {
 }
 
 #[rustfmt::skip]
-pub(crate) fn get_mds_bls12_381_t_6(e: &Env) -> Vec<Vec<U256>> {    
+pub(crate) fn get_mds_bls12_381_t_6(e: &Env) -> Vec<Vec<U256>> {
     vec![e,
         vec![e,
             U256::from_be_bytes(e, &bytesn!(e, 0x425fe54467f6a657583b7421cd9f51f5b725c51b38b607f911ddbf8866336cd4).into()),

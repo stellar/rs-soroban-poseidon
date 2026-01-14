@@ -1,147 +1,150 @@
+use crate::Field;
 use super::params::{
-    get_mat_diag_m_1_bls12_381, get_mat_diag_m_1_bn254, get_rc_bls12_381, get_rc_bn254,
-    get_rounds_f, get_rounds_p, SBOX_D,
+    get_mat_diag_bn254_t_2, get_mat_diag_bn254_t_3, get_mat_diag_bn254_t_4,
+    get_rc_bn254_t_2, get_rc_bn254_t_3, get_rc_bn254_t_4,
+    get_mat_diag_bls12_381_t_2, get_mat_diag_bls12_381_t_3, get_mat_diag_bls12_381_t_4,
+    get_rc_bls12_381_t_2, get_rc_bls12_381_t_3, get_rc_bls12_381_t_4,
+    SBOX_D,
 };
-use soroban_sdk::{symbol_short, vec, Env, Symbol, Vec, U256};
+use soroban_sdk::{crypto::{bls12_381::Fr as BlsScalar, BnScalar}, vec, Env, Vec, U256};
 
 const CAPACITY: u32 = 1;
 
-pub struct Poseidon2Config {
-    field_type: Symbol,
-    rate: u32,
-    capacity: u32,
-    rounds_f: u32,
-    rounds_p: u32,
-    m_diag: Vec<U256>,
-    rc: Vec<Vec<U256>>,
+pub trait Poseidon2Config<const T: u32, F: Field> {
+    const ROUNDS_F: u32;
+    const ROUNDS_P: u32;
+    const RATE: u32 = T - CAPACITY;
+    fn get_m_diag(e: &Env) -> Vec<U256>;
+    fn get_rc(e: &Env) -> Vec<Vec<U256>>; 
 }
 
-impl Poseidon2Config {
-    pub fn new(env: &Env, field_type: Symbol, rate: u32) -> Self {
-        let t = rate + CAPACITY;
-        if field_type == symbol_short!("BN254") {
-            Poseidon2Config {
-                field_type,
-                rate,
-                capacity: CAPACITY,
-                rounds_f: get_rounds_f(t),
-                rounds_p: get_rounds_p(t),
-                m_diag: get_mat_diag_m_1_bn254(env, t),
-                rc: get_rc_bn254(env, t),
-            }
-        } else if field_type == symbol_short!("BLS12_381") {
-            Poseidon2Config {
-                field_type,
-                rate,
-                capacity: CAPACITY,
-                rounds_f: get_rounds_f(t),
-                rounds_p: get_rounds_p(t),
-                m_diag: get_mat_diag_m_1_bls12_381(env, t),
-                rc: get_rc_bls12_381(env, t),
-            }
-        } else {
-            panic!(
-                "Unsupported field_type in Poseidon2Config::new; supported field types are BN254 and BLS12_381"
-            )
-        }
-    }
+pub(crate) struct Poseidon2Params {
+    pub rounds_f: u32,
+    pub rounds_p: u32,
+    pub m_diag: Vec<U256>,
+    pub rc: Vec<Vec<U256>>,
 }
 
-pub struct Poseidon2Sponge {
+pub struct Poseidon2Sponge<const T: u32, F: Field> {
     env: Env,
-    squeezed: bool,
-    cache: Vec<U256>,
     state: Vec<U256>,
-    config: Poseidon2Config,
+    params: Poseidon2Params,
+    _phantom: core::marker::PhantomData<F>,
 }
 
-impl Poseidon2Sponge {
-    pub fn new(env: &Env, iv: U256, config: Poseidon2Config) -> Self {
-        // the last element is reserved for capacity
-        let mut state = vec![env];
-        for _ in 0..config.rate {
-            state.push_back(U256::from_u32(env, 0));
-        }
-        state.push_back(iv);
+// BN254 implementations
+impl Poseidon2Config<2, BnScalar> for Poseidon2Sponge<2, BnScalar> {
+    const ROUNDS_F: u32 = 8;
+    const ROUNDS_P: u32 = 56;
+    fn get_m_diag(e: &Env) -> Vec<U256> { get_mat_diag_bn254_t_2(e) }
+    fn get_rc(e: &Env) -> Vec<Vec<U256>> { get_rc_bn254_t_2(e) }
+}
 
-        Self {
-            env: env.clone(),
-            cache: Vec::new(env),
-            state,
-            squeezed: false,
-            config,
+impl Poseidon2Config<3, BnScalar> for Poseidon2Sponge<3, BnScalar> {
+    const ROUNDS_F: u32 = 8;
+    const ROUNDS_P: u32 = 56;
+    fn get_m_diag(e: &Env) -> Vec<U256> { get_mat_diag_bn254_t_3(e) }
+    fn get_rc(e: &Env) -> Vec<Vec<U256>> { get_rc_bn254_t_3(e) }
+}
+
+impl Poseidon2Config<4, BnScalar> for Poseidon2Sponge<4, BnScalar> {
+    const ROUNDS_F: u32 = 8;
+    const ROUNDS_P: u32 = 56;
+    fn get_m_diag(e: &Env) -> Vec<U256> { get_mat_diag_bn254_t_4(e) }
+    fn get_rc(e: &Env) -> Vec<Vec<U256>> { get_rc_bn254_t_4(e) }
+}
+
+// BLS12-381 implementations
+impl Poseidon2Config<2, BlsScalar> for Poseidon2Sponge<2, BlsScalar> {
+    const ROUNDS_F: u32 = 8;
+    const ROUNDS_P: u32 = 56;
+    fn get_m_diag(e: &Env) -> Vec<U256> { get_mat_diag_bls12_381_t_2(e) }
+    fn get_rc(e: &Env) -> Vec<Vec<U256>> { get_rc_bls12_381_t_2(e) }
+}
+
+impl Poseidon2Config<3, BlsScalar> for Poseidon2Sponge<3, BlsScalar> {
+    const ROUNDS_F: u32 = 8;
+    const ROUNDS_P: u32 = 56;
+    fn get_m_diag(e: &Env) -> Vec<U256> { get_mat_diag_bls12_381_t_3(e) }
+    fn get_rc(e: &Env) -> Vec<Vec<U256>> { get_rc_bls12_381_t_3(e) }
+}
+
+impl Poseidon2Config<4, BlsScalar> for Poseidon2Sponge<4, BlsScalar> {
+    const ROUNDS_F: u32 = 8;
+    const ROUNDS_P: u32 = 56;
+    fn get_m_diag(e: &Env) -> Vec<U256> { get_mat_diag_bls12_381_t_4(e) }
+    fn get_rc(e: &Env) -> Vec<Vec<U256>> { get_rc_bls12_381_t_4(e) }
+}
+
+impl<const T: u32, F: Field> Poseidon2Sponge<T, F> 
+where
+    Self: Poseidon2Config<T, F>
+{
+    fn reset_state(&mut self, iv: U256) {
+        // State layout: [rate elements...][capacity element]
+        // Rate elements are at positions 0..RATE, capacity (IV) is at position T-1 (last)
+        self.state = vec![&self.env];
+        for _ in 0..Self::RATE {
+            self.state.push_back(U256::from_u32(&self.env, 0));
         }
+        // IV goes at the last position (capacity element)
+        self.state.push_back(iv);
     }
 
-    fn perform_duplex(&mut self) {
-        // zero-pad the cache
-        for _ in self.cache.len()..self.config.rate {
-            self.cache.push_back(U256::from_u32(&self.env, 0));
-        }
-        // add the cache into sponge state
-        for i in 0..self.config.rate {
-            let elem = self
-                .state
-                .get_unchecked(i)
-                .add(&self.cache.get_unchecked(i));
-            self.state.set(i, elem);
-        }
+    pub fn new(env: &Env) -> Self {
+        let params = Poseidon2Params {
+            rounds_f: <Self as Poseidon2Config<T, F>>::ROUNDS_F,
+            rounds_p: <Self as Poseidon2Config<T, F>>::ROUNDS_P,
+            m_diag: <Self as Poseidon2Config<T, F>>::get_m_diag(env),
+            rc: <Self as Poseidon2Config<T, F>>::get_rc(env),
+        };
+        let mut inner = Self {
+            env: env.clone(),
+            state: vec![env],
+            params,
+            _phantom: core::marker::PhantomData,
+        };
+        // Initialize with default IV of 0
+        inner.reset_state(U256::from_u32(env, 0));
+        inner
+    }
 
+    pub(crate) fn perform_duplex(&mut self) {
         self.state = self.env.crypto_hazmat().poseidon2_permutation(
             &self.state,
-            self.config.field_type.clone(),
-            self.state.len() as u32, // t = rate + capacity
+            F::symbol(),
+            T,
             SBOX_D,
-            self.config.rounds_f,
-            self.config.rounds_p,
-            &self.config.m_diag,
-            &self.config.rc,
+            self.params.rounds_f,
+            self.params.rounds_p,
+            &self.params.m_diag,
+            &self.params.rc,
         );
     }
 
-    pub fn absorb(&mut self, inputs: &Vec<U256>) {
-        assert!(!self.squeezed);
-        let cache_len = self.cache.len();
-        let inputs_len = inputs.len();
-
-        if cache_len + inputs_len > self.config.rate {
-            // if cache does not have enough room, absorb the remaining room.
-            // Remain must be positive, since cache size starts at 0 (<=rate),
-            // and after each iteration cache size <= rate.
-            let remain = self.config.rate - cache_len;
-            self.cache.append(&inputs.slice(0..remain));
-            // apply the sponge permutation to compress the cache
-            self.perform_duplex();
-            self.cache = vec![&self.env];
-            // call absorb with the leftover inputs
-            self.absorb(&inputs.slice(remain..));
-        } else {
-            // If the cache is not full, add the input into the cache
-            self.cache.append(inputs);
+    pub(crate) fn absorb(&mut self, inputs: &Vec<U256>) {
+        // Absorb into rate portion of state (positions 0..RATE)
+        assert!(inputs.len() <= Self::RATE);
+        for i in 0..inputs.len() {
+            let v = inputs.get_unchecked(i);
+            self.state.set(i as u32, v);
         }
     }
 
-    pub fn squeeze(&mut self) -> U256 {
-        assert!(!self.squeezed);
+    pub(crate) fn squeeze(&mut self) -> U256 {
         self.perform_duplex();
-        self.squeezed = true;
+        // Output is at position 0
         self.state.get_unchecked(0)
     }
-}
 
-/// Hashes the inputs using the Poseidon2 sponge with the given config.
-///
-/// The capacity element is initialized to `input.len() << 64`, matching noir's
-/// Poseidon2. The config determines the state size `t` and field-specific
-/// parameters.
-///
-/// For convenience, use [`Crypto::poseidon2_hash`] which creates the config
-/// automatically. Use this function directly when hashing multiple times with
-/// the same config to avoid repeated parameter initialization.
-pub fn hash(env: &Env, inputs: &Vec<U256>, config: Poseidon2Config) -> U256 {
-    // The initial value for the capacity element initialized with `input.len() * 2^64` for Poseidon2
-    let iv = U256::from_u128(env, (inputs.len() as u128) << 64);
-    let mut sponge = Poseidon2Sponge::new(env, iv, config);
-    sponge.absorb(inputs);
-    sponge.squeeze()
+    /// Hashes the inputs using the Poseidon2 sponge.
+    /// 
+    /// The capacity element is initialized to `input.len() << 64`, matching noir's Poseidon2.
+    pub fn hash(&mut self, inputs: &Vec<U256>) -> U256 {
+        // The initial value for the capacity element: input.len() * 2^64 for Poseidon2
+        let iv = U256::from_u128(&self.env, (inputs.len() as u128) << 64);
+        self.reset_state(iv);
+        self.absorb(inputs);
+        self.squeeze()
+    }
 }

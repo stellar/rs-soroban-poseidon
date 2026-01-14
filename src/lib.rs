@@ -58,17 +58,19 @@ where
 /// Computes a Poseidon2 hash matching noir's
 /// [implementation](https://github.com/noir-lang/noir/blob/abfee1f54b20984172ba23482f4af160395cfba5/noir_stdlib/src/hash/poseidon2.nr).
 ///
-/// Internally it always initializes the state with `t = 4`, regardless of
-/// input length. It alternates between absorbing and permuting until all
-/// input elements are consumed.
+/// Internally it uses the state size `t` specified by the const generic.
+/// Common usage is t=4 (rate=3) matching noir's default.
 ///
-/// Note: use [`poseidon2_sponge::hash`] with a pre-constructed
-/// [`Poseidon2Config`] directly if:
-/// - You need to hash multiple times. Pre-constructing the config saves the
-///   cost of re-initialization.
-/// - You want to use a different state size (`t ≤ 4`).
-pub fn poseidon2_hash(env: &Env, field_type: Symbol, inputs: &Vec<U256>) -> U256 {
-    const INTERNAL_RATE: u32 = 3;
-    let config = Poseidon2Config::new(env, field_type, INTERNAL_RATE);
-    poseidon2::hash(env, inputs, config)
+/// Note: For repeated hashing, create a sponge once and call `hash()` multiple times:
+/// ```ignore
+/// let mut sponge = Poseidon2Sponge::<4, BnScalar>::new(&env);
+/// let h1 = sponge.hash(&inputs1);
+/// let h2 = sponge.hash(&inputs2);
+/// ```
+pub fn poseidon2_hash<const T: u32, F: Field>(env: &Env, inputs: &Vec<U256>) -> U256
+where
+    Poseidon2Sponge<T, F>: Poseidon2Config<T, F>,
+{
+    let mut sponge = Poseidon2Sponge::<T, F>::new(env);
+    sponge.hash(inputs)
 }
