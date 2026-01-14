@@ -1,6 +1,9 @@
 #![no_std]
 
-use soroban_sdk::{crypto::{BnScalar,  bls12_381::Fr as BlsScalar}, symbol_short, Env, Symbol, Vec, U256};
+use soroban_sdk::{
+    crypto::{bls12_381::Fr as BlsScalar, BnScalar},
+    symbol_short, Env, Symbol, Vec, U256,
+};
 
 pub mod poseidon;
 pub mod poseidon2;
@@ -11,7 +14,6 @@ mod tests;
 // Re-export main types for convenience
 pub use poseidon::{PoseidonConfig, PoseidonSponge};
 pub use poseidon2::{Poseidon2Config, Poseidon2Sponge};
-
 
 pub trait Field {
     fn symbol() -> Symbol;
@@ -47,7 +49,7 @@ impl Field for BlsScalar {
 ///   output, which always picks a larger state size (N+1) to hash inputs in
 ///   one shot (up to t=17). If you need parameter support for larger `t`,
 ///   please file an issue.
-pub fn poseidon_hash<const T: u32, F: Field>(env: &Env, inputs: &Vec<U256>) -> U256 
+pub fn poseidon_hash<const T: u32, F: Field>(env: &Env, inputs: &Vec<U256>) -> U256
 where
     PoseidonSponge<T, F>: PoseidonConfig<T, F>,
 {

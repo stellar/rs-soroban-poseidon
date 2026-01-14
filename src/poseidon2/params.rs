@@ -1076,7 +1076,7 @@ pub(crate) fn get_rc_bn254_t_4(e: &Env) -> Vec<Vec<U256>> {
         ],
     ]
 }
-    
+
 #[rustfmt::skip]
 pub(crate) fn get_mat_diag_bls12_381_t_2(e: &Env) -> Vec<U256> {
     vec![
@@ -1085,7 +1085,7 @@ pub(crate) fn get_mat_diag_bls12_381_t_2(e: &Env) -> Vec<U256> {
         U256::from_be_bytes(e, &bytesn!(e, 0x0000000000000000000000000000000000000000000000000000000000000002).into()),
     ]
 }
-    
+
 #[rustfmt::skip]
 pub(crate) fn get_mat_diag_bls12_381_t_3(e: &Env) -> Vec<U256> {
     vec![
@@ -1095,7 +1095,7 @@ pub(crate) fn get_mat_diag_bls12_381_t_3(e: &Env) -> Vec<U256> {
         U256::from_be_bytes(e, &bytesn!(e, 0x0000000000000000000000000000000000000000000000000000000000000002).into()),
     ]
 }
-    
+
 #[rustfmt::skip]
 pub(crate) fn get_mat_diag_bls12_381_t_4(e: &Env) -> Vec<U256> {
     vec![
@@ -1106,7 +1106,7 @@ pub(crate) fn get_mat_diag_bls12_381_t_4(e: &Env) -> Vec<U256> {
         U256::from_be_bytes(e, &bytesn!(e, 0x3244cdec173b71a4659e2529b499362dac10cb2fd17562860c8bb9d0fd45b787).into()),
     ]
 }
-    
+
 #[rustfmt::skip]
 pub(crate) fn get_rc_bls12_381_t_2(e: &Env) -> Vec<Vec<U256>> {
     vec![e,
@@ -1368,7 +1368,7 @@ pub(crate) fn get_rc_bls12_381_t_2(e: &Env) -> Vec<Vec<U256>> {
         ],
     ]
 }
-    
+
 #[rustfmt::skip]
 pub(crate) fn get_rc_bls12_381_t_3(e: &Env) -> Vec<Vec<U256>> {
     vec![e,
@@ -1694,7 +1694,7 @@ pub(crate) fn get_rc_bls12_381_t_3(e: &Env) -> Vec<Vec<U256>> {
         ],
     ]
 }
-    
+
 #[rustfmt::skip]
 pub(crate) fn get_rc_bls12_381_t_4(e: &Env) -> Vec<Vec<U256>> {
     vec![

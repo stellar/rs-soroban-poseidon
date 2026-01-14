@@ -170,7 +170,6 @@ pub(crate) fn get_mds_bn254_t_6(e: &Env) -> Vec<Vec<U256>> {
     ]
 }
 
-
 #[rustfmt::skip]
 pub(crate) fn get_rc_bn254_t_2(e: &Env) -> Vec<Vec<U256>> {
     vec![e,

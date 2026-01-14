@@ -1,9 +1,8 @@
 use crate::poseidon2::params::{
-    get_mat_diag_bn254_t_2, get_mat_diag_bn254_t_3, get_mat_diag_bn254_t_4,
     get_mat_diag_bls12_381_t_2, get_mat_diag_bls12_381_t_3, get_mat_diag_bls12_381_t_4,
-    get_rc_bn254_t_2, get_rc_bn254_t_3, get_rc_bn254_t_4,
-    get_rc_bls12_381_t_2, get_rc_bls12_381_t_3, get_rc_bls12_381_t_4,
-    SBOX_D,
+    get_mat_diag_bn254_t_2, get_mat_diag_bn254_t_3, get_mat_diag_bn254_t_4, get_rc_bls12_381_t_2,
+    get_rc_bls12_381_t_3, get_rc_bls12_381_t_4, get_rc_bn254_t_2, get_rc_bn254_t_3,
+    get_rc_bn254_t_4, SBOX_D,
 };
 use crate::poseidon2::Poseidon2Sponge;
 use soroban_sdk::{bytesn, crypto::BnScalar, vec, Env, Symbol, U256};

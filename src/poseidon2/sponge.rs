@@ -1,12 +1,14 @@
-use crate::Field;
 use super::params::{
-    get_mat_diag_bn254_t_2, get_mat_diag_bn254_t_3, get_mat_diag_bn254_t_4,
-    get_rc_bn254_t_2, get_rc_bn254_t_3, get_rc_bn254_t_4,
     get_mat_diag_bls12_381_t_2, get_mat_diag_bls12_381_t_3, get_mat_diag_bls12_381_t_4,
-    get_rc_bls12_381_t_2, get_rc_bls12_381_t_3, get_rc_bls12_381_t_4,
-    SBOX_D,
+    get_mat_diag_bn254_t_2, get_mat_diag_bn254_t_3, get_mat_diag_bn254_t_4, get_rc_bls12_381_t_2,
+    get_rc_bls12_381_t_3, get_rc_bls12_381_t_4, get_rc_bn254_t_2, get_rc_bn254_t_3,
+    get_rc_bn254_t_4, SBOX_D,
 };
-use soroban_sdk::{crypto::{bls12_381::Fr as BlsScalar, BnScalar}, vec, Env, Vec, U256};
+use crate::Field;
+use soroban_sdk::{
+    crypto::{bls12_381::Fr as BlsScalar, BnScalar},
+    vec, Env, Vec, U256,
+};
 
 const CAPACITY: u32 = 1;
 
@@ -15,7 +17,7 @@ pub trait Poseidon2Config<const T: u32, F: Field> {
     const ROUNDS_P: u32;
     const RATE: u32 = T - CAPACITY;
     fn get_m_diag(e: &Env) -> Vec<U256>;
-    fn get_rc(e: &Env) -> Vec<Vec<U256>>; 
+    fn get_rc(e: &Env) -> Vec<Vec<U256>>;
 }
 
 pub(crate) struct Poseidon2Params {
@@ -36,49 +38,73 @@ pub struct Poseidon2Sponge<const T: u32, F: Field> {
 impl Poseidon2Config<2, BnScalar> for Poseidon2Sponge<2, BnScalar> {
     const ROUNDS_F: u32 = 8;
     const ROUNDS_P: u32 = 56;
-    fn get_m_diag(e: &Env) -> Vec<U256> { get_mat_diag_bn254_t_2(e) }
-    fn get_rc(e: &Env) -> Vec<Vec<U256>> { get_rc_bn254_t_2(e) }
+    fn get_m_diag(e: &Env) -> Vec<U256> {
+        get_mat_diag_bn254_t_2(e)
+    }
+    fn get_rc(e: &Env) -> Vec<Vec<U256>> {
+        get_rc_bn254_t_2(e)
+    }
 }
 
 impl Poseidon2Config<3, BnScalar> for Poseidon2Sponge<3, BnScalar> {
     const ROUNDS_F: u32 = 8;
     const ROUNDS_P: u32 = 56;
-    fn get_m_diag(e: &Env) -> Vec<U256> { get_mat_diag_bn254_t_3(e) }
-    fn get_rc(e: &Env) -> Vec<Vec<U256>> { get_rc_bn254_t_3(e) }
+    fn get_m_diag(e: &Env) -> Vec<U256> {
+        get_mat_diag_bn254_t_3(e)
+    }
+    fn get_rc(e: &Env) -> Vec<Vec<U256>> {
+        get_rc_bn254_t_3(e)
+    }
 }
 
 impl Poseidon2Config<4, BnScalar> for Poseidon2Sponge<4, BnScalar> {
     const ROUNDS_F: u32 = 8;
     const ROUNDS_P: u32 = 56;
-    fn get_m_diag(e: &Env) -> Vec<U256> { get_mat_diag_bn254_t_4(e) }
-    fn get_rc(e: &Env) -> Vec<Vec<U256>> { get_rc_bn254_t_4(e) }
+    fn get_m_diag(e: &Env) -> Vec<U256> {
+        get_mat_diag_bn254_t_4(e)
+    }
+    fn get_rc(e: &Env) -> Vec<Vec<U256>> {
+        get_rc_bn254_t_4(e)
+    }
 }
 
 // BLS12-381 implementations
 impl Poseidon2Config<2, BlsScalar> for Poseidon2Sponge<2, BlsScalar> {
     const ROUNDS_F: u32 = 8;
     const ROUNDS_P: u32 = 56;
-    fn get_m_diag(e: &Env) -> Vec<U256> { get_mat_diag_bls12_381_t_2(e) }
-    fn get_rc(e: &Env) -> Vec<Vec<U256>> { get_rc_bls12_381_t_2(e) }
+    fn get_m_diag(e: &Env) -> Vec<U256> {
+        get_mat_diag_bls12_381_t_2(e)
+    }
+    fn get_rc(e: &Env) -> Vec<Vec<U256>> {
+        get_rc_bls12_381_t_2(e)
+    }
 }
 
 impl Poseidon2Config<3, BlsScalar> for Poseidon2Sponge<3, BlsScalar> {
     const ROUNDS_F: u32 = 8;
     const ROUNDS_P: u32 = 56;
-    fn get_m_diag(e: &Env) -> Vec<U256> { get_mat_diag_bls12_381_t_3(e) }
-    fn get_rc(e: &Env) -> Vec<Vec<U256>> { get_rc_bls12_381_t_3(e) }
+    fn get_m_diag(e: &Env) -> Vec<U256> {
+        get_mat_diag_bls12_381_t_3(e)
+    }
+    fn get_rc(e: &Env) -> Vec<Vec<U256>> {
+        get_rc_bls12_381_t_3(e)
+    }
 }
 
 impl Poseidon2Config<4, BlsScalar> for Poseidon2Sponge<4, BlsScalar> {
     const ROUNDS_F: u32 = 8;
     const ROUNDS_P: u32 = 56;
-    fn get_m_diag(e: &Env) -> Vec<U256> { get_mat_diag_bls12_381_t_4(e) }
-    fn get_rc(e: &Env) -> Vec<Vec<U256>> { get_rc_bls12_381_t_4(e) }
+    fn get_m_diag(e: &Env) -> Vec<U256> {
+        get_mat_diag_bls12_381_t_4(e)
+    }
+    fn get_rc(e: &Env) -> Vec<Vec<U256>> {
+        get_rc_bls12_381_t_4(e)
+    }
 }
 
-impl<const T: u32, F: Field> Poseidon2Sponge<T, F> 
+impl<const T: u32, F: Field> Poseidon2Sponge<T, F>
 where
-    Self: Poseidon2Config<T, F>
+    Self: Poseidon2Config<T, F>,
 {
     fn reset_state(&mut self, iv: U256) {
         // State layout: [rate elements...][capacity element]
@@ -138,7 +164,7 @@ where
     }
 
     /// Hashes the inputs using the Poseidon2 sponge.
-    /// 
+    ///
     /// The capacity element is initialized to `input.len() << 64`, matching noir's Poseidon2.
     pub fn hash(&mut self, inputs: &Vec<U256>) -> U256 {
         // The initial value for the capacity element: input.len() * 2^64 for Poseidon2

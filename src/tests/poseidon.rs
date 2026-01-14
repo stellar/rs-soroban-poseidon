@@ -1,8 +1,10 @@
-use crate::poseidon::params::{
-    get_mds_bn254_t_3, get_rc_bn254_t_3, SBOX_D,
-};
+use crate::poseidon::params::{get_mds_bn254_t_3, get_rc_bn254_t_3, SBOX_D};
 use crate::poseidon::PoseidonSponge;
-use soroban_sdk::{bytesn, vec, crypto::{BnScalar, bls12_381::Fr as BlsScalar}, Env, Symbol, U256};
+use soroban_sdk::{
+    bytesn,
+    crypto::{bls12_381::Fr as BlsScalar, BnScalar},
+    vec, Env, Symbol, U256,
+};
 
 // Poseidon tests
 

@@ -1,12 +1,15 @@
-use crate::Field;
 use super::params::{
-    get_mds_bn254_t_2, get_mds_bn254_t_3, get_mds_bn254_t_4, get_mds_bn254_t_5, get_mds_bn254_t_6,
-    get_rc_bn254_t_2, get_rc_bn254_t_3, get_rc_bn254_t_4, get_rc_bn254_t_5, get_rc_bn254_t_6,
-    get_mds_bls12_381_t_2, get_mds_bls12_381_t_3, get_mds_bls12_381_t_4, get_mds_bls12_381_t_5, get_mds_bls12_381_t_6,
-    get_rc_bls12_381_t_2, get_rc_bls12_381_t_3, get_rc_bls12_381_t_4, get_rc_bls12_381_t_5, get_rc_bls12_381_t_6,
-    SBOX_D,
+    get_mds_bls12_381_t_2, get_mds_bls12_381_t_3, get_mds_bls12_381_t_4, get_mds_bls12_381_t_5,
+    get_mds_bls12_381_t_6, get_mds_bn254_t_2, get_mds_bn254_t_3, get_mds_bn254_t_4,
+    get_mds_bn254_t_5, get_mds_bn254_t_6, get_rc_bls12_381_t_2, get_rc_bls12_381_t_3,
+    get_rc_bls12_381_t_4, get_rc_bls12_381_t_5, get_rc_bls12_381_t_6, get_rc_bn254_t_2,
+    get_rc_bn254_t_3, get_rc_bn254_t_4, get_rc_bn254_t_5, get_rc_bn254_t_6, SBOX_D,
 };
-use soroban_sdk::{crypto::{bls12_381::Fr as BlsScalar, BnScalar}, vec, Env, Vec, U256};
+use crate::Field;
+use soroban_sdk::{
+    crypto::{bls12_381::Fr as BlsScalar, BnScalar},
+    vec, Env, Vec, U256,
+};
 
 const CAPACITY: u32 = 1;
 
@@ -15,7 +18,7 @@ pub trait PoseidonConfig<const T: u32, F: Field> {
     const ROUNDS_P: u32;
     const RATE: u32 = T - CAPACITY;
     fn get_mds(e: &Env) -> Vec<Vec<U256>>;
-    fn get_rc(e: &Env) -> Vec<Vec<U256>>; 
+    fn get_rc(e: &Env) -> Vec<Vec<U256>>;
 }
 
 pub(crate) struct PoseidonParams {
@@ -37,86 +40,126 @@ pub struct PoseidonSponge<const T: u32, F: Field> {
 impl PoseidonConfig<2, BnScalar> for PoseidonSponge<2, BnScalar> {
     const ROUNDS_F: u32 = 8;
     const ROUNDS_P: u32 = 56;
-    fn get_mds(e: &Env) -> Vec<Vec<U256>> { get_mds_bn254_t_2(e) }
-    fn get_rc(e: &Env) -> Vec<Vec<U256>> { get_rc_bn254_t_2(e) }
+    fn get_mds(e: &Env) -> Vec<Vec<U256>> {
+        get_mds_bn254_t_2(e)
+    }
+    fn get_rc(e: &Env) -> Vec<Vec<U256>> {
+        get_rc_bn254_t_2(e)
+    }
 }
 
 impl PoseidonConfig<3, BnScalar> for PoseidonSponge<3, BnScalar> {
     const ROUNDS_F: u32 = 8;
     const ROUNDS_P: u32 = 57;
-    fn get_mds(e: &Env) -> Vec<Vec<U256>> { get_mds_bn254_t_3(e) }
-    fn get_rc(e: &Env) -> Vec<Vec<U256>> { get_rc_bn254_t_3(e) }
+    fn get_mds(e: &Env) -> Vec<Vec<U256>> {
+        get_mds_bn254_t_3(e)
+    }
+    fn get_rc(e: &Env) -> Vec<Vec<U256>> {
+        get_rc_bn254_t_3(e)
+    }
 }
 
 impl PoseidonConfig<4, BnScalar> for PoseidonSponge<4, BnScalar> {
     const ROUNDS_F: u32 = 8;
     const ROUNDS_P: u32 = 56;
-    fn get_mds(e: &Env) -> Vec<Vec<U256>> { get_mds_bn254_t_4(e) }
-    fn get_rc(e: &Env) -> Vec<Vec<U256>> { get_rc_bn254_t_4(e) }
+    fn get_mds(e: &Env) -> Vec<Vec<U256>> {
+        get_mds_bn254_t_4(e)
+    }
+    fn get_rc(e: &Env) -> Vec<Vec<U256>> {
+        get_rc_bn254_t_4(e)
+    }
 }
 
 impl PoseidonConfig<5, BnScalar> for PoseidonSponge<5, BnScalar> {
     const ROUNDS_F: u32 = 8;
     const ROUNDS_P: u32 = 60;
-    fn get_mds(e: &Env) -> Vec<Vec<U256>> { get_mds_bn254_t_5(e) }
-    fn get_rc(e: &Env) -> Vec<Vec<U256>> { get_rc_bn254_t_5(e) }
+    fn get_mds(e: &Env) -> Vec<Vec<U256>> {
+        get_mds_bn254_t_5(e)
+    }
+    fn get_rc(e: &Env) -> Vec<Vec<U256>> {
+        get_rc_bn254_t_5(e)
+    }
 }
 
 impl PoseidonConfig<6, BnScalar> for PoseidonSponge<6, BnScalar> {
     const ROUNDS_F: u32 = 8;
     const ROUNDS_P: u32 = 60;
-    fn get_mds(e: &Env) -> Vec<Vec<U256>> { get_mds_bn254_t_6(e) }
-    fn get_rc(e: &Env) -> Vec<Vec<U256>> { get_rc_bn254_t_6(e) }
+    fn get_mds(e: &Env) -> Vec<Vec<U256>> {
+        get_mds_bn254_t_6(e)
+    }
+    fn get_rc(e: &Env) -> Vec<Vec<U256>> {
+        get_rc_bn254_t_6(e)
+    }
 }
 
 // BLS12-381 implementations
 impl PoseidonConfig<2, BlsScalar> for PoseidonSponge<2, BlsScalar> {
     const ROUNDS_F: u32 = 8;
     const ROUNDS_P: u32 = 56;
-    fn get_mds(e: &Env) -> Vec<Vec<U256>> { get_mds_bls12_381_t_2(e) }
-    fn get_rc(e: &Env) -> Vec<Vec<U256>> { get_rc_bls12_381_t_2(e) }
+    fn get_mds(e: &Env) -> Vec<Vec<U256>> {
+        get_mds_bls12_381_t_2(e)
+    }
+    fn get_rc(e: &Env) -> Vec<Vec<U256>> {
+        get_rc_bls12_381_t_2(e)
+    }
 }
 
 impl PoseidonConfig<3, BlsScalar> for PoseidonSponge<3, BlsScalar> {
     const ROUNDS_F: u32 = 8;
     const ROUNDS_P: u32 = 56;
-    fn get_mds(e: &Env) -> Vec<Vec<U256>> { get_mds_bls12_381_t_3(e) }
-    fn get_rc(e: &Env) -> Vec<Vec<U256>> { get_rc_bls12_381_t_3(e) }
+    fn get_mds(e: &Env) -> Vec<Vec<U256>> {
+        get_mds_bls12_381_t_3(e)
+    }
+    fn get_rc(e: &Env) -> Vec<Vec<U256>> {
+        get_rc_bls12_381_t_3(e)
+    }
 }
 
 impl PoseidonConfig<4, BlsScalar> for PoseidonSponge<4, BlsScalar> {
     const ROUNDS_F: u32 = 8;
     const ROUNDS_P: u32 = 56;
-    fn get_mds(e: &Env) -> Vec<Vec<U256>> { get_mds_bls12_381_t_4(e) }
-    fn get_rc(e: &Env) -> Vec<Vec<U256>> { get_rc_bls12_381_t_4(e) }
+    fn get_mds(e: &Env) -> Vec<Vec<U256>> {
+        get_mds_bls12_381_t_4(e)
+    }
+    fn get_rc(e: &Env) -> Vec<Vec<U256>> {
+        get_rc_bls12_381_t_4(e)
+    }
 }
 
 impl PoseidonConfig<5, BlsScalar> for PoseidonSponge<5, BlsScalar> {
     const ROUNDS_F: u32 = 8;
     const ROUNDS_P: u32 = 56;
-    fn get_mds(e: &Env) -> Vec<Vec<U256>> { get_mds_bls12_381_t_5(e) }
-    fn get_rc(e: &Env) -> Vec<Vec<U256>> { get_rc_bls12_381_t_5(e) }
+    fn get_mds(e: &Env) -> Vec<Vec<U256>> {
+        get_mds_bls12_381_t_5(e)
+    }
+    fn get_rc(e: &Env) -> Vec<Vec<U256>> {
+        get_rc_bls12_381_t_5(e)
+    }
 }
 
 impl PoseidonConfig<6, BlsScalar> for PoseidonSponge<6, BlsScalar> {
     const ROUNDS_F: u32 = 8;
     const ROUNDS_P: u32 = 57;
-    fn get_mds(e: &Env) -> Vec<Vec<U256>> { get_mds_bls12_381_t_6(e) }
-    fn get_rc(e: &Env) -> Vec<Vec<U256>> { get_rc_bls12_381_t_6(e) }
+    fn get_mds(e: &Env) -> Vec<Vec<U256>> {
+        get_mds_bls12_381_t_6(e)
+    }
+    fn get_rc(e: &Env) -> Vec<Vec<U256>> {
+        get_rc_bls12_381_t_6(e)
+    }
 }
 
-impl<const T: u32, F: Field> PoseidonSponge<T, F> 
+impl<const T: u32, F: Field> PoseidonSponge<T, F>
 where
-    Self: PoseidonConfig<T, F>
+    Self: PoseidonConfig<T, F>,
 {
     fn reset_state(&mut self) {
         // initialize the state with CAPACITY elements (CAPACITY = 1 in our sponge) at the 0-th element
-        // The initial value is 0 for standard Poseidon        
-        let iv = U256::from_u32(&self.env, 0);    
+        // The initial value is 0 for standard Poseidon
+        let iv = U256::from_u32(&self.env, 0);
         self.state = vec![&self.env, iv];
         for _ in 0..Self::RATE {
             self.state.push_back(U256::from_u32(&self.env, 0));
-        }        
+        }
     }
 
     pub fn new(env: &Env) -> Self {
