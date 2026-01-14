@@ -1,151 +1,170 @@
+use crate::Field;
 use super::params::{
-    get_mds_bls12_381, get_mds_bn254, get_rc_bls12_381, get_rc_bn254, get_rounds_f_bls12_381,
-    get_rounds_f_bn254, get_rounds_p_bls12_381, get_rounds_p_bn254, SBOX_D,
+    get_mds_bn254_t_2, get_mds_bn254_t_3, get_mds_bn254_t_4, get_mds_bn254_t_5, get_mds_bn254_t_6,
+    get_rc_bn254_t_2, get_rc_bn254_t_3, get_rc_bn254_t_4, get_rc_bn254_t_5, get_rc_bn254_t_6,
+    get_mds_bls12_381_t_2, get_mds_bls12_381_t_3, get_mds_bls12_381_t_4, get_mds_bls12_381_t_5, get_mds_bls12_381_t_6,
+    get_rc_bls12_381_t_2, get_rc_bls12_381_t_3, get_rc_bls12_381_t_4, get_rc_bls12_381_t_5, get_rc_bls12_381_t_6,
+    SBOX_D,
 };
-use soroban_sdk::{symbol_short, vec, Env, Symbol, Vec, U256};
+use soroban_sdk::{crypto::{bls12_381::Fr as BlsScalar, BnScalar}, vec, Env, Vec, U256};
 
 const CAPACITY: u32 = 1;
 
-pub struct PoseidonConfig {
-    field_type: Symbol,
-    rate: u32,
-    capacity: u32,
-    rounds_f: u32,
-    rounds_p: u32,
-    mds: Vec<Vec<U256>>,
-    rc: Vec<Vec<U256>>,
+pub trait PoseidonConfig<const T: u32, F: Field> {
+    const ROUNDS_F: u32;
+    const ROUNDS_P: u32;
+    const RATE: u32 = T - CAPACITY;
+    fn get_mds(e: &Env) -> Vec<Vec<U256>>;
+    fn get_rc(e: &Env) -> Vec<Vec<U256>>; 
 }
 
-impl PoseidonConfig {
-    pub fn new(env: &Env, field_type: Symbol, rate: u32) -> Self {
-        let t = rate + CAPACITY;
-        if field_type == symbol_short!("BN254") {
-            PoseidonConfig {
-                field_type,
-                rate,
-                capacity: CAPACITY,
-                rounds_f: get_rounds_f_bn254(t),
-                rounds_p: get_rounds_p_bn254(t),
-                mds: get_mds_bn254(env, t),
-                rc: get_rc_bn254(env, t),
-            }
-        } else if field_type == symbol_short!("BLS12_381") {
-            PoseidonConfig {
-                field_type,
-                rate,
-                capacity: CAPACITY,
-                rounds_f: get_rounds_f_bls12_381(t),
-                rounds_p: get_rounds_p_bls12_381(t),
-                mds: get_mds_bls12_381(env, t),
-                rc: get_rc_bls12_381(env, t),
-            }
-        } else {
-            panic!(
-                "Unsupported field_type in PoseidonConfig::new; supported field types are BN254 and BLS12_381"
-            )
-        }
-    }
+pub(crate) struct PoseidonParams {
+    pub rounds_f: u32,
+    pub rounds_p: u32,
+    pub mds: Vec<Vec<U256>>,
+    pub rc: Vec<Vec<U256>>,
 }
 
-pub struct PoseidonSponge {
+// single absorption, single sqeeze
+pub struct PoseidonSponge<const T: u32, F: Field> {
     env: Env,
-    squeezed: bool,
-    cache: Vec<U256>,
-    state: Vec<U256>, // state size = rate + capacity
-    config: PoseidonConfig,
+    state: Vec<U256>,
+    params: PoseidonParams,
+    _phantom: core::marker::PhantomData<F>,
 }
 
-impl PoseidonSponge {
-    // field_type - 'BN254' or 'BLS12_381'
-    // rate - number of elements the sponge can absorb/squeeze continuously at once, after which a permutation is
-    // required.
-    // capacity - number of extra elements the state contains, capacity provides more safety. capacity = 1 in our simplified sponge (matching circom's).
-    // state.len() == rate + capacity
-    // returns a Poseidon object initialize with the prepopulated parameters for use, you can call hash on it.
-    // limitation - single squeeze, no duplex switching between absorb and squeeze
-    pub fn new(env: &Env, iv: U256, config: PoseidonConfig) -> Self {
-        // initialize the state with CAPACITY elements (CAPACITY = 1 in our sponge)
-        let mut state = vec![env, iv];
-        for _ in 0..config.rate {
-            state.push_back(U256::from_u32(env, 0));
-        }
-        Self {
-            env: env.clone(),
-            squeezed: false,
-            cache: Vec::new(env),
-            state,
-            config,
-        }
+// BN254 implementations
+impl PoseidonConfig<2, BnScalar> for PoseidonSponge<2, BnScalar> {
+    const ROUNDS_F: u32 = 8;
+    const ROUNDS_P: u32 = 56;
+    fn get_mds(e: &Env) -> Vec<Vec<U256>> { get_mds_bn254_t_2(e) }
+    fn get_rc(e: &Env) -> Vec<Vec<U256>> { get_rc_bn254_t_2(e) }
+}
+
+impl PoseidonConfig<3, BnScalar> for PoseidonSponge<3, BnScalar> {
+    const ROUNDS_F: u32 = 8;
+    const ROUNDS_P: u32 = 57;
+    fn get_mds(e: &Env) -> Vec<Vec<U256>> { get_mds_bn254_t_3(e) }
+    fn get_rc(e: &Env) -> Vec<Vec<U256>> { get_rc_bn254_t_3(e) }
+}
+
+impl PoseidonConfig<4, BnScalar> for PoseidonSponge<4, BnScalar> {
+    const ROUNDS_F: u32 = 8;
+    const ROUNDS_P: u32 = 56;
+    fn get_mds(e: &Env) -> Vec<Vec<U256>> { get_mds_bn254_t_4(e) }
+    fn get_rc(e: &Env) -> Vec<Vec<U256>> { get_rc_bn254_t_4(e) }
+}
+
+impl PoseidonConfig<5, BnScalar> for PoseidonSponge<5, BnScalar> {
+    const ROUNDS_F: u32 = 8;
+    const ROUNDS_P: u32 = 60;
+    fn get_mds(e: &Env) -> Vec<Vec<U256>> { get_mds_bn254_t_5(e) }
+    fn get_rc(e: &Env) -> Vec<Vec<U256>> { get_rc_bn254_t_5(e) }
+}
+
+impl PoseidonConfig<6, BnScalar> for PoseidonSponge<6, BnScalar> {
+    const ROUNDS_F: u32 = 8;
+    const ROUNDS_P: u32 = 60;
+    fn get_mds(e: &Env) -> Vec<Vec<U256>> { get_mds_bn254_t_6(e) }
+    fn get_rc(e: &Env) -> Vec<Vec<U256>> { get_rc_bn254_t_6(e) }
+}
+
+// BLS12-381 implementations
+impl PoseidonConfig<2, BlsScalar> for PoseidonSponge<2, BlsScalar> {
+    const ROUNDS_F: u32 = 8;
+    const ROUNDS_P: u32 = 56;
+    fn get_mds(e: &Env) -> Vec<Vec<U256>> { get_mds_bls12_381_t_2(e) }
+    fn get_rc(e: &Env) -> Vec<Vec<U256>> { get_rc_bls12_381_t_2(e) }
+}
+
+impl PoseidonConfig<3, BlsScalar> for PoseidonSponge<3, BlsScalar> {
+    const ROUNDS_F: u32 = 8;
+    const ROUNDS_P: u32 = 56;
+    fn get_mds(e: &Env) -> Vec<Vec<U256>> { get_mds_bls12_381_t_3(e) }
+    fn get_rc(e: &Env) -> Vec<Vec<U256>> { get_rc_bls12_381_t_3(e) }
+}
+
+impl PoseidonConfig<4, BlsScalar> for PoseidonSponge<4, BlsScalar> {
+    const ROUNDS_F: u32 = 8;
+    const ROUNDS_P: u32 = 56;
+    fn get_mds(e: &Env) -> Vec<Vec<U256>> { get_mds_bls12_381_t_4(e) }
+    fn get_rc(e: &Env) -> Vec<Vec<U256>> { get_rc_bls12_381_t_4(e) }
+}
+
+impl PoseidonConfig<5, BlsScalar> for PoseidonSponge<5, BlsScalar> {
+    const ROUNDS_F: u32 = 8;
+    const ROUNDS_P: u32 = 56;
+    fn get_mds(e: &Env) -> Vec<Vec<U256>> { get_mds_bls12_381_t_5(e) }
+    fn get_rc(e: &Env) -> Vec<Vec<U256>> { get_rc_bls12_381_t_5(e) }
+}
+
+impl PoseidonConfig<6, BlsScalar> for PoseidonSponge<6, BlsScalar> {
+    const ROUNDS_F: u32 = 8;
+    const ROUNDS_P: u32 = 57;
+    fn get_mds(e: &Env) -> Vec<Vec<U256>> { get_mds_bls12_381_t_6(e) }
+    fn get_rc(e: &Env) -> Vec<Vec<U256>> { get_rc_bls12_381_t_6(e) }
+}
+
+impl<const T: u32, F: Field> PoseidonSponge<T, F> 
+where
+    Self: PoseidonConfig<T, F>
+{
+    fn reset_state(&mut self) {
+        // initialize the state with CAPACITY elements (CAPACITY = 1 in our sponge) at the 0-th element
+        // The initial value is 0 for standard Poseidon        
+        let iv = U256::from_u32(&self.env, 0);    
+        self.state = vec![&self.env, iv];
+        for _ in 0..Self::RATE {
+            self.state.push_back(U256::from_u32(&self.env, 0));
+        }        
     }
 
-    fn perform_duplex(&mut self) {
-        // zero-pad the cache
-        for _ in self.cache.len()..self.config.rate {
-            self.cache.push_back(U256::from_u32(&self.env, 0));
-        }
-        // add the cache into sponge state, leaving the 0-th element
-        for i in 0..self.config.rate {
-            let elem = self
-                .state
-                .get_unchecked(i + CAPACITY)
-                .add(&self.cache.get_unchecked(i));
-            self.state.set(i + CAPACITY, elem);
-        }
+    pub fn new(env: &Env) -> Self {
+        let params = PoseidonParams {
+            rounds_f: <Self as PoseidonConfig<T, F>>::ROUNDS_F,
+            rounds_p: <Self as PoseidonConfig<T, F>>::ROUNDS_P,
+            mds: <Self as PoseidonConfig<T, F>>::get_mds(env),
+            rc: <Self as PoseidonConfig<T, F>>::get_rc(env),
+        };
+        let mut inner = Self {
+            env: env.clone(),
+            state: vec![env],
+            params,
+            _phantom: core::marker::PhantomData,
+        };
+        inner.reset_state();
+        inner
+    }
 
+    pub(crate) fn perform_duplex(&mut self) {
         self.state = self.env.crypto_hazmat().poseidon_permutation(
             &self.state,
-            self.config.field_type.clone(),
-            self.state.len() as u32, // t = rate + capacity
+            F::symbol(),
+            T,
             SBOX_D,
-            self.config.rounds_f,
-            self.config.rounds_p,
-            &self.config.mds,
-            &self.config.rc,
+            self.params.rounds_f,
+            self.params.rounds_p,
+            &self.params.mds,
+            &self.params.rc,
         );
     }
 
-    pub fn absorb(&mut self, inputs: &Vec<U256>) {
-        assert!(!self.squeezed);
-        let cache_len = self.cache.len();
-        let inputs_len = inputs.len();
-
-        if cache_len + inputs_len > self.config.rate {
-            // if cache does not have enough room, absorb the remaining room.
-            // Remain must be positive, since cache size starts at 0 (<=rate),
-            // and after each iteration cache size <= rate.
-            let remain = self.config.rate - cache_len;
-            self.cache.append(&inputs.slice(0..remain));
-            // apply the sponge permutation to compress the cache
-            self.perform_duplex();
-            self.cache = vec![&self.env];
-            // call absorb with the leftover inputs
-            self.absorb(&inputs.slice(remain..));
-        } else {
-            // If the cache is not full, add the input into the cache
-            self.cache.append(inputs);
+    pub(crate) fn absorb(&mut self, inputs: &Vec<U256>) {
+        assert!(inputs.len() <= Self::RATE);
+        for i in 0..inputs.len() {
+            let v = inputs.get_unchecked(i);
+            self.state.set(i as u32 + CAPACITY, v);
         }
     }
 
-    pub fn squeeze(&mut self) -> U256 {
-        assert!(!self.squeezed);
+    pub(crate) fn squeeze(&mut self) -> U256 {
         self.perform_duplex();
-        self.squeezed = true;
         self.state.get_unchecked(0)
     }
-}
 
-/// Hashes the inputs using the Poseidon sponge with the given config.
-///
-/// The capacity element is initialized to 0, matching circom's Poseidon. The
-/// config determines the state size `t` and field-specific parameters.
-///
-/// For convenience, use [`Crypto::poseidon_hash`] which creates the config
-/// automatically. Use this function directly when hashing multiple times with
-/// the same config to avoid repeated parameter initialization.
-pub fn hash(env: &Env, inputs: &Vec<U256>, config: PoseidonConfig) -> U256 {
-    // The initial value for the capacity element initialized with 0 for standard Poseidon
-    let iv = U256::from_u32(env, 0);
-    let mut sponge = PoseidonSponge::new(env, iv, config);
-    sponge.absorb(inputs);
-    sponge.squeeze()
+    pub fn hash(&mut self, inputs: &Vec<U256>) -> U256 {
+        self.reset_state();
+        self.absorb(inputs);
+        self.squeeze()
+    }
 }

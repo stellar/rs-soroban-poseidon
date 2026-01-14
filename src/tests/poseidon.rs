@@ -1,8 +1,8 @@
 use crate::poseidon::params::{
-    get_mds_bn254, get_rc_bn254, get_rounds_f_bn254, get_rounds_p_bn254, SBOX_D,
+    get_mds_bn254_t_3, get_rc_bn254_t_3, SBOX_D,
 };
-use crate::poseidon::{hash, PoseidonConfig};
-use soroban_sdk::{bytesn, vec, Env, Symbol, U256};
+use crate::poseidon::PoseidonSponge;
+use soroban_sdk::{bytesn, vec, crypto::{BnScalar, bls12_381::Fr as BlsScalar}, Env, Symbol, U256};
 
 // Poseidon tests
 
@@ -42,9 +42,8 @@ fn test_poseidon_bn254_hash_1_2() {
         .into(),
     );
 
-    let field = Symbol::new(&env, "BN254");
-    let config = PoseidonConfig::new(&env, field, inputs.len() as u32);
-    let result = hash(&env, &inputs, config);
+    let mut sponge = PoseidonSponge::<3, BnScalar>::new(&env);
+    let result = sponge.hash(&inputs);
 
     assert_eq!(result, expected);
 }
@@ -85,9 +84,8 @@ fn test_poseidon_bn254_hash_3_4() {
         .into(),
     );
 
-    let field = Symbol::new(&env, "BN254");
-    let config = PoseidonConfig::new(&env, field, inputs.len() as u32);
-    let result = hash(&env, &inputs, config);
+    let mut sponge = PoseidonSponge::<3, BnScalar>::new(&env);
+    let result = sponge.hash(&inputs);
 
     assert_eq!(result, expected);
 }
@@ -120,9 +118,8 @@ fn test_poseidon_bn254_hash_1() {
         .into(),
     );
 
-    let field = Symbol::new(&env, "BN254");
-    let config = PoseidonConfig::new(&env, field, inputs.len() as u32);
-    let result = hash(&env, &inputs, config);
+    let mut sponge = PoseidonSponge::<2, BnScalar>::new(&env);
+    let result = sponge.hash(&inputs);
 
     assert_eq!(result, expected);
 }
@@ -171,9 +168,8 @@ fn test_poseidon_bn254_hash_1_2_3() {
         .into(),
     );
 
-    let field = Symbol::new(&env, "BN254");
-    let config = PoseidonConfig::new(&env, field, inputs.len() as u32);
-    let result = hash(&env, &inputs, config);
+    let mut sponge = PoseidonSponge::<4, BnScalar>::new(&env);
+    let result = sponge.hash(&inputs);
 
     assert_eq!(result, expected);
 }
@@ -230,9 +226,8 @@ fn test_poseidon_bn254_hash_1_2_3_4() {
         .into(),
     );
 
-    let field = Symbol::new(&env, "BN254");
-    let config = PoseidonConfig::new(&env, field, inputs.len() as u32);
-    let result = hash(&env, &inputs, config);
+    let mut sponge = PoseidonSponge::<5, BnScalar>::new(&env);
+    let result = sponge.hash(&inputs);
 
     assert_eq!(result, expected);
 }
@@ -297,9 +292,8 @@ fn test_poseidon_bn254_hash_1_2_3_4_5() {
         .into(),
     );
 
-    let field = Symbol::new(&env, "BN254");
-    let config = PoseidonConfig::new(&env, field, inputs.len() as u32);
-    let result = hash(&env, &inputs, config);
+    let mut sponge = PoseidonSponge::<6, BnScalar>::new(&env);
+    let result = sponge.hash(&inputs);
 
     assert_eq!(result, expected);
 }
@@ -339,9 +333,8 @@ fn test_poseidon_bls12_381_hash_1_2() {
         .into(),
     );
 
-    let field = Symbol::new(&env, "BLS12_381");
-    let config = PoseidonConfig::new(&env, field, inputs.len() as u32);
-    let result = hash(&env, &inputs, config);
+    let mut sponge = PoseidonSponge::<3, BlsScalar>::new(&env);
+    let result = sponge.hash(&inputs);
 
     assert_eq!(result, expected);
 }
@@ -374,9 +367,8 @@ fn test_poseidon_bls12_381_hash_1() {
         .into(),
     );
 
-    let field = Symbol::new(&env, "BLS12_381");
-    let config = PoseidonConfig::new(&env, field, inputs.len() as u32);
-    let result = hash(&env, &inputs, config);
+    let mut sponge = PoseidonSponge::<2, BlsScalar>::new(&env);
+    let result = sponge.hash(&inputs);
 
     assert_eq!(result, expected);
 }
@@ -425,9 +417,8 @@ fn test_poseidon_bls12_381_hash_1_2_3() {
         .into(),
     );
 
-    let field = Symbol::new(&env, "BLS12_381");
-    let config = PoseidonConfig::new(&env, field, inputs.len() as u32);
-    let result = hash(&env, &inputs, config);
+    let mut sponge = PoseidonSponge::<4, BlsScalar>::new(&env);
+    let result = sponge.hash(&inputs);
 
     assert_eq!(result, expected);
 }
@@ -484,9 +475,8 @@ fn test_poseidon_bls12_381_hash_1_2_3_4() {
         .into(),
     );
 
-    let field = Symbol::new(&env, "BLS12_381");
-    let config = PoseidonConfig::new(&env, field, inputs.len() as u32);
-    let result = hash(&env, &inputs, config);
+    let mut sponge = PoseidonSponge::<5, BlsScalar>::new(&env);
+    let result = sponge.hash(&inputs);
 
     assert_eq!(result, expected);
 }
@@ -551,9 +541,8 @@ fn test_poseidon_bls12_381_hash_1_2_3_4_5() {
         .into(),
     );
 
-    let field = Symbol::new(&env, "BLS12_381");
-    let config = PoseidonConfig::new(&env, field, inputs.len() as u32);
-    let result = hash(&env, &inputs, config);
+    let mut sponge = PoseidonSponge::<6, BlsScalar>::new(&env);
+    let result = sponge.hash(&inputs);
 
     assert_eq!(result, expected);
 }
@@ -587,11 +576,11 @@ fn test_poseidon_permutation_t3() {
     // Get parameters
     let field = Symbol::new(&env, "BN254");
     let t = 3;
-    let mds = get_mds_bn254(&env, t);
-    let rc = get_rc_bn254(&env, t);
+    let mds = get_mds_bn254_t_3(&env);
+    let rc = get_rc_bn254_t_3(&env);
     let d = SBOX_D;
-    let rounds_f = get_rounds_f_bn254(t);
-    let rounds_p = get_rounds_p_bn254(t);
+    let rounds_f = 8;
+    let rounds_p = 57;
 
     // Call the permutation
     let result = env

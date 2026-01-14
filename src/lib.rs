@@ -1,6 +1,6 @@
 #![no_std]
 
-use soroban_sdk::{Env, Symbol, Vec, U256};
+use soroban_sdk::{crypto::{BnScalar,  bls12_381::Fr as BlsScalar}, symbol_short, Env, Symbol, Vec, U256};
 
 pub mod poseidon;
 pub mod poseidon2;
@@ -12,6 +12,22 @@ mod tests;
 pub use poseidon::{PoseidonConfig, PoseidonSponge};
 pub use poseidon2::{Poseidon2Config, Poseidon2Sponge};
 
+
+pub trait Field {
+    fn symbol() -> Symbol;
+}
+
+impl Field for BnScalar {
+    fn symbol() -> Symbol {
+        symbol_short!("BN254")
+    }
+}
+
+impl Field for BlsScalar {
+    fn symbol() -> Symbol {
+        symbol_short!("BLS12_381")
+    }
+}
 
 /// Computes a Poseidon hash matching circom's
 /// [implementation](https://github.com/iden3/circomlib/blob/35e54ea21da3e8762557234298dbb553c175ea8d/circuits/poseidon.circom)
@@ -31,9 +47,12 @@ pub use poseidon2::{Poseidon2Config, Poseidon2Sponge};
 ///   output, which always picks a larger state size (N+1) to hash inputs in
 ///   one shot (up to t=17). If you need parameter support for larger `t`,
 ///   please file an issue.
-pub fn poseidon_hash(env: &Env, field_type: Symbol, inputs: &Vec<U256>) -> U256 {
-    let config = PoseidonConfig::new(env, field_type, inputs.len() as u32);
-    poseidon::hash(env, inputs, config)
+pub fn poseidon_hash<const T: u32, F: Field>(env: &Env, inputs: &Vec<U256>) -> U256 
+where
+    PoseidonSponge<T, F>: PoseidonConfig<T, F>,
+{
+    let mut sponge = PoseidonSponge::<T, F>::new(env);
+    sponge.hash(inputs)
 }
 
 /// Computes a Poseidon2 hash matching noir's
