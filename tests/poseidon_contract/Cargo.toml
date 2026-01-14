@@ -1,0 +1,19 @@
+[package]
+name = "test_poseidon_contract"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+doctest = false
+
+[dependencies]
+soroban-sdk = { workspace = true, features = ["hazmat-crypto"] }
+soroban-poseidon = { workspace = true }
+
+[dev-dependencies]
+soroban-sdk = { workspace = true, features = ["hazmat-crypto", "testutils"] }
