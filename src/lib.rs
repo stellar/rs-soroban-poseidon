@@ -35,7 +35,7 @@ impl Field for BlsScalar {
 ///
 /// # Type Parameters
 ///
-/// - `T`: State size. Must equal `inputs.len() + 1` (rate = T-1, capacity = 1).
+/// - `T`: State size. Must be ≥ `inputs.len() + 1` (rate = T-1, capacity = 1).
 /// - `F`: Field type. Use [`BnScalar`] for BN254 or [`BlsScalar`] for BLS12-381.
 ///
 /// # Supported Configurations
@@ -99,8 +99,10 @@ where
 ///
 /// # Type Parameters
 ///
-/// - `T`: State size. Common usage is `T=4` (rate=3) matching noir's default.
-/// - `F`: Field type. Use [`BnScalar`] for BN254 or [`BlsScalar`] for BLS12-381.
+/// - `T`: State size. Must be ≥ `inputs.len() + 1`. Common usage is `T=4`
+///   (rate=3) matching noir's default.
+/// - `F`: Field type. Use [`BnScalar`] for BN254 or [`BlsScalar`] for
+///   BLS12-381.
 ///
 /// # Supported Configurations
 ///

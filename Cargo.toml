@@ -29,7 +29,7 @@ homepage = "https://github.com/stellar/rs-soroban-poseidon"
 repository = "https://github.com/stellar/rs-soroban-poseidon"
 documentation = "https://docs.rs/soroban-poseidon"
 readme = "README.md"
-keywords = ["soroban", "stellar", "cryptography", "poseidon", "poseidon2", "hash"]
+keywords = ["soroban", "stellar", "cryptography", "poseidon", "poseidon2"]
 categories = ["cryptography", "no-std"]
 
 [lib]

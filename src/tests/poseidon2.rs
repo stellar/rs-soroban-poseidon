@@ -786,3 +786,35 @@ fn test_poseidon2_sponge_inputs_exceed_rate_t4() {
     let mut sponge = Poseidon2Sponge::<4, BnScalar>::new(&env);
     let _ = sponge.compute_hash(&inputs); // Should panic
 }
+
+// Poseidon2 supports empty inputs (unlike Poseidon) because its IV choice
+// prevents collision
+// - hash([]) uses IV = 0, state = [0, 0, 0, 0]
+// - hash([0]) uses IV = 2^64, state = [2^64, 0, 0, 0] then absorbs 0
+#[test]
+fn test_poseidon2_bn254_empty_inputs() {
+    let env = Env::default();
+
+    let empty_inputs = vec![&env];
+    let zero_inputs = vec![&env, U256::from_u32(&env, 0)];
+
+    // Expected output for empty inputs: first element of permutation([0,0,0,0])
+    let expected_empty = U256::from_be_bytes(
+        &env,
+        &bytesn!(
+            &env,
+            0x18dfb8dc9b82229cff974efefc8df78b1ce96d9d844236b496785c698bc6732e
+        )
+        .into(),
+    );
+
+    let mut sponge = Poseidon2Sponge::<4, BnScalar>::new(&env);
+
+    let empty_hash = sponge.compute_hash(&empty_inputs);
+    assert_eq!(empty_hash, expected_empty);
+
+    let zero_hash = sponge.compute_hash(&zero_inputs);
+
+    // Verify domain separation: hash([]) != hash([0])
+    assert_ne!(empty_hash, zero_hash);
+}

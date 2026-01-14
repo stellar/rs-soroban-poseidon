@@ -730,3 +730,22 @@ fn test_poseidon_sponge_inputs_exceed_rate() {
     let mut sponge = PoseidonSponge::<3, BnScalar>::new(&env);
     let _ = sponge.compute_hash(&inputs); // Should panic
 }
+
+// Empty inputs are explicitly rejected in Poseidon because:
+// 1. Circom rejects them
+// 2. With IV=0, hash([]) would collide with hash([0]) since both result in
+//    permuting state [0, 0, ...]
+//
+// This differs from Poseidon2, which uses IV = `input_len << 64`, making
+// hash([]) and hash([0]) produce different outputs.
+#[test]
+#[should_panic(expected = "Poseidon: inputs cannot be empty")]
+fn test_poseidon_bn254_empty_inputs_rejected() {
+    let env = Env::default();
+
+    let empty_inputs = vec![&env];
+
+    let mut sponge = PoseidonSponge::<2, BnScalar>::new(&env);
+    // This should panic
+    let _ = sponge.compute_hash(&empty_inputs);
+}

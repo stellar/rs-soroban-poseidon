@@ -241,9 +241,13 @@ where
     /// implementation](https://github.com/iden3/circomlib/blob/master/circuits/poseidon.circom).
     ///
     /// # Panics
-    /// Panics if `inputs.len() > RATE` (i.e., `T - 1`). For larger inputs,
-    /// multi-round absorption would be needed (not yet implemented).
+    /// - if `inputs.is_empty()`. Empty inputs are not allowed because
+    ///   `hash([])` would collide with `hash([0])`. Circom also disallows empty
+    ///   inputs.
+    /// - if `inputs.len() > RATE` (i.e., `T - 1`). For larger inputs,
+    ///   multi-round absorption would be needed (not yet implemented).
     pub fn compute_hash(&mut self, inputs: &Vec<U256>) -> U256 {
+        assert!(!inputs.is_empty(), "Poseidon: inputs cannot be empty");
         self.reset_state();
         self.absorb(inputs);
         self.squeeze()
