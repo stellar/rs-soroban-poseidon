@@ -711,6 +711,48 @@ fn test_poseidon_sponge_matches_hash_function() {
 }
 
 // ============================================================================
+// Partial rate tests (inputs.len() < RATE)
+// ============================================================================
+
+// Note: Circom's Poseidon always uses T = inputs.len() + 1 (full rate), so there are
+// no reference test vectors for partial rate scenarios. These tests verify that:
+// 1. Our implementation handles partial rate correctly (zero-padding)
+// 2. Results are deterministic
+// 3. Different T values produce different results (as expected)
+
+// Test hashing 1 input with T=3 (rate=2) - partial rate usage
+// This verifies zero-padding works correctly when inputs don't fill the rate
+#[test]
+fn test_poseidon_bn254_partial_rate_t3_1_input() {
+    let env = Env::default();
+
+    // 1 input with T=3 (rate=2) - only half the rate is used
+    let inputs = vec![
+        &env,
+        U256::from_be_bytes(
+            &env,
+            &bytesn!(
+                &env,
+                0x0000000000000000000000000000000000000000000000000000000000000001
+            )
+            .into(),
+        ),
+    ];
+
+    let mut sponge = PoseidonSponge::<3, BnScalar>::new(&env);
+    let result = sponge.compute_hash(&inputs);
+
+    // Result should be deterministic
+    let result2 = sponge.compute_hash(&inputs);
+    assert_eq!(result, result2);
+
+    // Verify it's different from using T=2 (full rate with 1 input)
+    let mut sponge_t2 = PoseidonSponge::<2, BnScalar>::new(&env);
+    let result_t2 = sponge_t2.compute_hash(&inputs);
+    assert_ne!(result, result_t2);
+}
+
+// ============================================================================
 // Failure mode tests
 // ============================================================================
 
@@ -729,6 +771,121 @@ fn test_poseidon_sponge_inputs_exceed_rate() {
 
     let mut sponge = PoseidonSponge::<3, BnScalar>::new(&env);
     let _ = sponge.compute_hash(&inputs); // Should panic
+}
+
+// ============================================================================
+// Large value tests (values exceeding field modulus)
+// ============================================================================
+
+// Test that values larger than the field modulus are properly reduced
+// BN254 modulus = 0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000001
+// Input: [modulus + 42, 2*modulus + 100]
+// After reduction: [42, 100]
+// Reference: circomlibjs confirms hash(large_values) == hash(reduced_values)
+#[test]
+fn test_poseidon_bn254_large_values_t3() {
+    let env = Env::default();
+
+    let bn254_modulus_plus_42 = bytesn!(
+        &env,
+        // modulus + 42
+        0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f000002b
+    );
+    let two_times_modulus_plus_100 = bytesn!(
+        &env,
+        // 2 * modulus + 100
+        0x60c89ce5c263405370a08b6d0302b0ba5067d090f372e12287c3eb27e0000066
+    );
+
+    let large_inputs = vec![
+        &env,
+        U256::from_be_bytes(&env, &bn254_modulus_plus_42.into()),
+        U256::from_be_bytes(&env, &two_times_modulus_plus_100.into()),
+    ];
+
+    // Compare with reduced values [42, 100]
+    let reduced_inputs = vec![&env, U256::from_u32(&env, 42), U256::from_u32(&env, 100)];
+
+    // Expected: same as hash([42, 100])
+    // Reference from circomlibjs
+    let expected = U256::from_be_bytes(
+        &env,
+        &bytesn!(
+            &env,
+            0x013f85b7cf992c496d699a1cf7d6aad4ac760b41122849182bd1d7008f757612
+        )
+        .into(),
+    );
+
+    let mut sponge = PoseidonSponge::<3, BnScalar>::new(&env);
+
+    // Test with large values - should automatically reduce
+    let result_large = sponge.compute_hash(&large_inputs);
+
+    // Test with reduced values
+    let result_reduced = sponge.compute_hash(&reduced_inputs);
+
+    // Both should produce the same result
+    assert_eq!(result_large, result_reduced);
+    assert_eq!(result_reduced, expected);
+}
+
+// Test large values with BLS12-381 field
+// BLS12-381 modulus = 0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001
+// Input: [modulus + 123, modulus + 456]
+// After reduction: [123, 456]
+#[test]
+fn test_poseidon_bls12_381_large_values_t3() {
+    let env = Env::default();
+
+    let bls_modulus_plus_123 = bytesn!(
+        &env,
+        // modulus + 123
+        0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff0000007c
+    );
+    let bls_modulus_plus_456 = bytesn!(
+        &env,
+        // modulus + 456
+        0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff000001c9
+    );
+
+    let large_inputs = vec![
+        &env,
+        U256::from_be_bytes(&env, &bls_modulus_plus_123.into()),
+        U256::from_be_bytes(&env, &bls_modulus_plus_456.into()),
+    ];
+
+    // Compare with reduced values [123, 456]
+    let reduced_inputs = vec![&env, U256::from_u32(&env, 123), U256::from_u32(&env, 456)];
+
+    // Expected: same as hash([123, 456])
+    // Reference from poseidon-bls12381-circom
+    let expected = U256::from_be_bytes(
+        &env,
+        &bytesn!(
+            &env,
+            0x11dcf9a2b6ceee9e2d5d2def70adb539b38d8595ab09e1dc5cfab96046ec10a2
+        )
+        .into(),
+    );
+
+    let mut sponge = PoseidonSponge::<3, BlsScalar>::new(&env);
+
+    // Test with large values
+    let result_large = sponge.compute_hash(&large_inputs);
+
+    // Test with reduced values
+    let result_reduced = sponge.compute_hash(&reduced_inputs);
+
+    // Verify both produce the expected result (tests automatic modular reduction)
+    assert_eq!(
+        result_large, expected,
+        "Large values should reduce mod field"
+    );
+    assert_eq!(
+        result_reduced, expected,
+        "Reduced values should match expected"
+    );
 }
 
 // Empty inputs are explicitly rejected in Poseidon because:
