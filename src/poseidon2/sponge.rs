@@ -176,8 +176,10 @@ where
     pub(crate) fn absorb(&mut self, inputs: &Vec<U256>) {
         // Absorb into rate portion of state (positions 0..RATE)
         assert!(inputs.len() <= Self::RATE);
+        let modulus = F::modulus(&self.env);
         for i in 0..inputs.len() {
             let v = inputs.get_unchecked(i);
+            assert!(v < modulus, "input exceeds field modulus");
             self.state.set(i as u32, v);
         }
     }
@@ -201,8 +203,10 @@ where
     /// implementation](https://github.com/noir-lang/noir/blob/master/noir_stdlib/src/hash/poseidon2.nr).
     ///
     /// # Panics
-    /// Panics if `inputs.len() > RATE` (i.e., `T - 1`). For larger inputs,
-    /// multi-round absorption would be needed (not yet implemented).
+    /// - if `inputs.len() > RATE` (i.e., `T - 1`). For larger inputs,
+    ///   multi-round absorption would be needed (not yet implemented).
+    /// - if any input value is greater than or equal to the field modulus.
+    ///   All inputs must be valid field elements (i.e., less than the modulus).
     pub fn compute_hash(&mut self, inputs: &Vec<U256>) -> U256 {
         // The initial value for the capacity element: input.len() * 2^64 for Poseidon2
         let iv = U256::from_u128(&self.env, (inputs.len() as u128) << 64);

@@ -218,8 +218,10 @@ where
 
     pub(crate) fn absorb(&mut self, inputs: &Vec<U256>) {
         assert!(inputs.len() <= Self::RATE);
+        let modulus = F::modulus(&self.env);
         for i in 0..inputs.len() {
             let v = inputs.get_unchecked(i);
+            assert!(v < modulus, "input exceeds field modulus");
             self.state.set(i as u32 + CAPACITY, v);
         }
     }
@@ -246,6 +248,8 @@ where
     ///   inputs.
     /// - if `inputs.len() > RATE` (i.e., `T - 1`). For larger inputs,
     ///   multi-round absorption would be needed (not yet implemented).
+    /// - if any input value is greater than or equal to the field modulus.
+    ///   All inputs must be valid field elements (i.e., less than the modulus).
     pub fn compute_hash(&mut self, inputs: &Vec<U256>) -> U256 {
         assert!(!inputs.is_empty(), "Poseidon: inputs cannot be empty");
         self.reset_state();

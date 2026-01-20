@@ -870,16 +870,14 @@ fn test_poseidon2_sponge_inputs_exceed_rate_t4() {
 }
 
 // ============================================================================
-// Large value tests (values exceeding field modulus)
+// Large value tests (values exceeding field modulus must panic)
 // ============================================================================
 
-// Test that values larger than the field modulus are properly reduced
+// Test that values equal to or larger than the field modulus are rejected
 // BN254 modulus = 0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000001
-// Input: [modulus + 42, modulus + 100, modulus + 123]
-// After reduction: [42, 100, 123]
-// Reference: noir circuit via generate_poseidon2_test.sh
 #[test]
-fn test_poseidon2_bn254_large_values_t4() {
+#[should_panic(expected = "input exceeds field modulus")]
+fn test_poseidon2_bn254_input_exceeds_modulus() {
     let env = Env::default();
 
     let modulus_plus_42 = bytesn!(
@@ -887,60 +885,112 @@ fn test_poseidon2_bn254_large_values_t4() {
         // modulus + 42
         0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f000002b
     );
-    let two_times_modulus_plus_100 = bytesn!(
-        &env,
-        // 2 * modulus + 100
-        0x60c89ce5c263405370a08b6d0302b0ba5067d090f372e12287c3eb27e0000066
-    );
-    let three_times_modulus_plus_123 = bytesn!(
-        &env,
-        // 3 * modulus + 123
-        0x912ceb58a394e07d28f0d12384840917789bb8d96d2c51b3cba5e0bbd000007e
-    );
 
-    let large_inputs = vec![
+    let inputs = vec![
         &env,
         U256::from_be_bytes(&env, &modulus_plus_42.into()),
-        U256::from_be_bytes(&env, &two_times_modulus_plus_100.into()),
-        U256::from_be_bytes(&env, &three_times_modulus_plus_123.into()),
+        U256::from_u32(&env, 1),
+        U256::from_u32(&env, 2),
     ];
-
-    // Compare with reduced values [42, 100, 123]
-    let reduced_inputs = vec![
-        &env,
-        U256::from_u32(&env, 42),
-        U256::from_u32(&env, 100),
-        U256::from_u32(&env, 123),
-    ];
-
-    // Expected: same as hash([42, 100, 123])
-    // Reference from noir circuit
-    let expected = U256::from_be_bytes(
-        &env,
-        &bytesn!(
-            &env,
-            0x2434deaec7ea27c6c7540742327debc2d35702187dd72a2406afac23a0da5de4
-        )
-        .into(),
-    );
 
     let mut sponge = Poseidon2Sponge::<4, BnScalar>::new(&env);
+    let _ = sponge.compute_hash(&inputs); // Should panic
+}
 
-    // Test with large values
-    let result_large = sponge.compute_hash(&large_inputs);
+// Test that a value exactly equal to the BN254 modulus is rejected
+#[test]
+#[should_panic(expected = "input exceeds field modulus")]
+fn test_poseidon2_bn254_input_equals_modulus() {
+    let env = Env::default();
 
-    // Test with reduced values
-    let result_reduced = sponge.compute_hash(&reduced_inputs);
-
-    // Verify both produce the expected result (tests automatic modular reduction)
-    assert_eq!(
-        result_large, expected,
-        "Large values should reduce mod field"
+    let bn254_modulus = bytesn!(
+        &env,
+        0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000001
     );
-    assert_eq!(
-        result_reduced, expected,
-        "Reduced values should match expected"
+
+    let inputs = vec![&env, U256::from_be_bytes(&env, &bn254_modulus.into())];
+
+    let mut sponge = Poseidon2Sponge::<2, BnScalar>::new(&env);
+    let _ = sponge.compute_hash(&inputs); // Should panic
+}
+
+// Test that values just below the BN254 modulus are accepted
+#[test]
+fn test_poseidon2_bn254_input_below_modulus_accepted() {
+    let env = Env::default();
+
+    // modulus - 1 (largest valid input)
+    let bn254_modulus_minus_1 = bytesn!(
+        &env,
+        0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000
     );
+
+    let inputs = vec![
+        &env,
+        U256::from_be_bytes(&env, &bn254_modulus_minus_1.into()),
+    ];
+
+    let mut sponge = Poseidon2Sponge::<2, BnScalar>::new(&env);
+    // Should not panic - value is valid
+    let _ = sponge.compute_hash(&inputs);
+}
+
+// Test large values with BLS12-381 field
+// BLS12-381 modulus = 0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001
+#[test]
+#[should_panic(expected = "input exceeds field modulus")]
+fn test_poseidon2_bls12_381_input_exceeds_modulus() {
+    let env = Env::default();
+
+    let bls_modulus_plus_123 = bytesn!(
+        &env,
+        // modulus + 123
+        0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff0000007c
+    );
+
+    let inputs = vec![
+        &env,
+        U256::from_u32(&env, 1),
+        U256::from_be_bytes(&env, &bls_modulus_plus_123.into()),
+    ];
+
+    let mut sponge = Poseidon2Sponge::<3, BlsScalar>::new(&env);
+    let _ = sponge.compute_hash(&inputs); // Should panic
+}
+
+// Test that a value exactly equal to the BLS12-381 modulus is rejected
+#[test]
+#[should_panic(expected = "input exceeds field modulus")]
+fn test_poseidon2_bls12_381_input_equals_modulus() {
+    let env = Env::default();
+
+    let bls_modulus = bytesn!(
+        &env,
+        0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001
+    );
+
+    let inputs = vec![&env, U256::from_be_bytes(&env, &bls_modulus.into())];
+
+    let mut sponge = Poseidon2Sponge::<2, BlsScalar>::new(&env);
+    let _ = sponge.compute_hash(&inputs); // Should panic
+}
+
+// Test that values just below the BLS12-381 modulus are accepted
+#[test]
+fn test_poseidon2_bls12_381_input_below_modulus_accepted() {
+    let env = Env::default();
+
+    // modulus - 1 (largest valid input)
+    let bls_modulus_minus_1 = bytesn!(
+        &env,
+        0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000000
+    );
+
+    let inputs = vec![&env, U256::from_be_bytes(&env, &bls_modulus_minus_1.into())];
+
+    let mut sponge = Poseidon2Sponge::<2, BlsScalar>::new(&env);
+    // Should not panic - value is valid
+    let _ = sponge.compute_hash(&inputs);
 }
 
 // Poseidon2 supports empty inputs (unlike Poseidon) because its IV choice

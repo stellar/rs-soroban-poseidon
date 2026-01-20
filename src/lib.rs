@@ -1,6 +1,7 @@
 #![no_std]
 
 use soroban_sdk::{
+    bytesn,
     crypto::{bls12_381::Fr as BlsScalar, BnScalar},
     symbol_short, Env, Symbol, Vec, U256,
 };
@@ -16,17 +17,43 @@ pub use poseidon2::{Poseidon2Config, Poseidon2Sponge};
 
 pub trait Field {
     fn symbol() -> Symbol;
+    /// Returns the field modulus. Inputs to Poseidon/Poseidon2 must be less than this value.
+    fn modulus(env: &Env) -> U256;
 }
 
 impl Field for BnScalar {
     fn symbol() -> Symbol {
         symbol_short!("BN254")
     }
+
+    fn modulus(env: &Env) -> U256 {
+        // BN254 scalar field modulus
+        U256::from_be_bytes(
+            env,
+            &bytesn!(
+                env,
+                0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000001
+            )
+            .into(),
+        )
+    }
 }
 
 impl Field for BlsScalar {
     fn symbol() -> Symbol {
         symbol_short!("BLS12_381")
+    }
+
+    fn modulus(env: &Env) -> U256 {
+        // BLS12-381 scalar field modulus
+        U256::from_be_bytes(
+            env,
+            &bytesn!(
+                env,
+                0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001
+            )
+            .into(),
+        )
     }
 }
 
@@ -42,6 +69,12 @@ impl Field for BlsScalar {
 ///
 /// - BN254: `T` ∈ {2, 3, 4, 5, 6} (i.e., 1–5 inputs)
 /// - BLS12-381: `T` ∈ {2, 3, 4, 5, 6} (i.e., 1–5 inputs)
+///
+/// # Panics
+///
+/// - if `inputs.is_empty()`
+/// - if `inputs.len() > T - 1` (rate exceeded)
+/// - if any input value ≥ the field modulus (inputs must be valid field elements)
 ///
 /// # Example
 ///
@@ -108,6 +141,11 @@ where
 ///
 /// - BN254: `T` ∈ {2, 3, 4} (i.e., rate = 1, 2, or 3)
 /// - BLS12-381: `T` ∈ {2, 3, 4} (i.e., rate = 1, 2, or 3)
+///
+/// # Panics
+///
+/// - if `inputs.len() > T - 1` (rate exceeded)
+/// - if any input value ≥ the field modulus (inputs must be valid field elements)
 ///
 /// # Capacity Initialization
 ///
