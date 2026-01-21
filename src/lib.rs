@@ -6,8 +6,8 @@ use soroban_sdk::{
     symbol_short, Env, Symbol, Vec, U256,
 };
 
-pub mod poseidon;
-pub mod poseidon2;
+pub(crate) mod poseidon;
+pub(crate) mod poseidon2;
 
 #[cfg(test)]
 mod tests;
