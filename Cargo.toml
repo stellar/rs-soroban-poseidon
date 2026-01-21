@@ -1,0 +1,46 @@
+[workspace]
+resolver = "2"
+members = [
+    ".",
+    "tests/poseidon_contract",
+    "tests/poseidon2_contract",
+]
+
+[workspace.package]
+version = "0.1.0"
+authors = ["Stellar Development Foundation <info@stellar.org>"]
+edition = "2021"
+rust-version = "1.84.0"
+license = "Apache-2.0"
+
+[workspace.dependencies]
+soroban-sdk = "=25.0.0-rc.2"
+soroban-poseidon = { path = "." }
+
+[package]
+name = "soroban-poseidon"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Poseidon and Poseidon2 cryptographic hash functions for Soroban smart contracts"
+homepage = "https://github.com/stellar/rs-soroban-poseidon"
+repository = "https://github.com/stellar/rs-soroban-poseidon"
+documentation = "https://docs.rs/soroban-poseidon"
+readme = "README.md"
+keywords = ["soroban", "stellar", "cryptography", "poseidon", "poseidon2"]
+categories = ["cryptography", "no-std"]
+
+[lib]
+doctest = true
+
+[dependencies]
+soroban-sdk = { workspace = true, features = ["hazmat-crypto"] }
+
+[dev-dependencies]
+soroban-sdk = { workspace = true, features = ["hazmat-crypto", "testutils"] }
+
+[features]
+default = []
+testutils = ["soroban-sdk/testutils"]
