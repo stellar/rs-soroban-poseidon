@@ -180,7 +180,7 @@ where
         for i in 0..inputs.len() {
             let v = inputs.get_unchecked(i);
             assert!(v < modulus, "input exceeds field modulus");
-            self.state.set(i as u32, v);
+            self.state.set(i, v);
         }
     }
 

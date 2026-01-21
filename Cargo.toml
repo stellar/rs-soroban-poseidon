@@ -14,7 +14,7 @@ rust-version = "1.84.0"
 license = "Apache-2.0"
 
 [workspace.dependencies]
-soroban-sdk = { git = "https://github.com/stellar/rs-soroban-sdk", branch = "release/v25-preview" }
+soroban-sdk = "=25.0.0-rc.2"
 soroban-poseidon = { path = "." }
 
 [package]

@@ -1312,8 +1312,9 @@ dependencies = [
 
 [[package]]
 name = "soroban-ledger-snapshot"
-version = "23.4.0"
-source = "git+https://github.com/stellar/rs-soroban-sdk?branch=release%2Fv25-preview#8ffe5a152cd368596109bb8934e8507ce9873c1e"
+version = "25.0.0-rc.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8d25599487aac0d6eebf3e2deb603b888dc56e1be067eb8b11bde75bd92afb25"
 dependencies = [
  "serde",
  "serde_json",
@@ -1332,8 +1333,9 @@ dependencies = [
 
 [[package]]
 name = "soroban-sdk"
-version = "23.4.0"
-source = "git+https://github.com/stellar/rs-soroban-sdk?branch=release%2Fv25-preview#8ffe5a152cd368596109bb8934e8507ce9873c1e"
+version = "25.0.0-rc.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0a0b065049a4035d369a4edae09b4a7d171ca4e99d17b65b8265c8615858312d"
 dependencies = [
  "arbitrary",
  "bytes-lit",
@@ -1355,8 +1357,9 @@ dependencies = [
 
 [[package]]
 name = "soroban-sdk-macros"
-version = "23.4.0"
-source = "git+https://github.com/stellar/rs-soroban-sdk?branch=release%2Fv25-preview#8ffe5a152cd368596109bb8934e8507ce9873c1e"
+version = "25.0.0-rc.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c98a64a5df898eb27c12bd4f785de3be1badf1e077d118b9338b31bf27f87d59"
 dependencies = [
  "darling 0.20.11",
  "heck",
@@ -1374,8 +1377,9 @@ dependencies = [
 
 [[package]]
 name = "soroban-spec"
-version = "23.4.0"
-source = "git+https://github.com/stellar/rs-soroban-sdk?branch=release%2Fv25-preview#8ffe5a152cd368596109bb8934e8507ce9873c1e"
+version = "25.0.0-rc.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2309b5a8b7d36f3205462c4e8306a71dace61ad0568e88f4b853c8e416da06f1"
 dependencies = [
  "base64",
  "stellar-xdr",
@@ -1385,8 +1389,9 @@ dependencies = [
 
 [[package]]
 name = "soroban-spec-rust"
-version = "23.4.0"
-source = "git+https://github.com/stellar/rs-soroban-sdk?branch=release%2Fv25-preview#8ffe5a152cd368596109bb8934e8507ce9873c1e"
+version = "25.0.0-rc.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4872ec5b96bc7a2ed790003a83d30eb0ef16e3c73b08e938ab4c9b0604d6aca7"
 dependencies = [
  "prettyplease",
  "proc-macro2",
