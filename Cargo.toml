@@ -3,7 +3,7 @@ resolver = "2"
 members = [".", "tests/poseidon_contract", "tests/poseidon2_contract"]
 
 [workspace.package]
-version = "25.0.0-rc.1"
+version = "25.0.0"
 authors = ["Stellar Development Foundation <info@stellar.org>"]
 edition = "2021"
 rust-version = "1.84.0"
