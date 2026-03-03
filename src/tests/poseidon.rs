@@ -711,45 +711,23 @@ fn test_poseidon_sponge_matches_hash_function() {
 }
 
 // ============================================================================
-// Partial rate tests (inputs.len() < RATE)
+// Partial rate rejection tests
 // ============================================================================
 
-// Note: Circom's Poseidon always uses T = inputs.len() + 1 (full rate), so there are
-// no reference test vectors for partial rate scenarios. These tests verify that:
-// 1. Our implementation handles partial rate correctly (zero-padding)
-// 2. Results are deterministic
-// 3. Different T values produce different results (as expected)
+// Poseidon V1 requires inputs.len() == RATE (full rate), matching circom's
+// behavior where nInputs determines T = nInputs + 1. Partial-rate inputs are
+// rejected to prevent suffix-zero collisions from implicit zero-padding.
 
-// Test hashing 1 input with T=3 (rate=2) - partial rate usage
-// This verifies zero-padding works correctly when inputs don't fill the rate
 #[test]
-fn test_poseidon_bn254_partial_rate_t3_1_input() {
+#[should_panic(expected = "inputs.len() must equal rate")]
+fn test_poseidon_bn254_rejects_partial_rate() {
     let env = Env::default();
 
-    // 1 input with T=3 (rate=2) - only half the rate is used
-    let inputs = vec![
-        &env,
-        U256::from_be_bytes(
-            &env,
-            &bytesn!(
-                &env,
-                0x0000000000000000000000000000000000000000000000000000000000000001
-            )
-            .into(),
-        ),
-    ];
+    // 1 input with T=3 (rate=2) - partial rate must be rejected
+    let inputs = vec![&env, U256::from_u32(&env, 1)];
 
     let mut sponge = PoseidonSponge::<3, BnScalar>::new(&env);
-    let result = sponge.compute_hash(&inputs);
-
-    // Result should be deterministic
-    let result2 = sponge.compute_hash(&inputs);
-    assert_eq!(result, result2);
-
-    // Verify it's different from using T=2 (full rate with 1 input)
-    let mut sponge_t2 = PoseidonSponge::<2, BnScalar>::new(&env);
-    let result_t2 = sponge_t2.compute_hash(&inputs);
-    assert_ne!(result, result_t2);
+    sponge.compute_hash(&inputs); // should panic
 }
 
 // ============================================================================
@@ -757,7 +735,7 @@ fn test_poseidon_bn254_partial_rate_t3_1_input() {
 // ============================================================================
 
 #[test]
-#[should_panic(expected = "assertion failed")]
+#[should_panic(expected = "inputs.len() must equal rate")]
 fn test_poseidon_sponge_inputs_exceed_rate() {
     let env = Env::default();
 
@@ -896,15 +874,9 @@ fn test_poseidon_bls12_381_input_below_modulus_accepted() {
     let _ = sponge.compute_hash(&inputs);
 }
 
-// Empty inputs are explicitly rejected in Poseidon because:
-// 1. Circom rejects them
-// 2. With IV=0, hash([]) would collide with hash([0]) since both result in
-//    permuting state [0, 0, ...]
-//
-// This differs from Poseidon2, which uses IV = `input_len << 64`, making
-// hash([]) and hash([0]) produce different outputs.
+// Empty inputs are rejected because inputs.len() must equal RATE (>= 1).
 #[test]
-#[should_panic(expected = "Poseidon: inputs cannot be empty")]
+#[should_panic(expected = "inputs.len() must equal rate")]
 fn test_poseidon_bn254_empty_inputs_rejected() {
     let env = Env::default();
 
