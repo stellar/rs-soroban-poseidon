@@ -852,7 +852,7 @@ fn test_poseidon2_bn254_partial_rate_t4_2_inputs() {
 // ============================================================================
 
 #[test]
-#[should_panic(expected = "assertion failed")]
+#[should_panic(expected = "Poseidon2: inputs.len() must not exceed rate (T - 1)")]
 fn test_poseidon2_sponge_inputs_exceed_rate_t4() {
     let env = Env::default();
 

@@ -62,7 +62,7 @@ impl Field for BlsScalar {
 ///
 /// # Type Parameters
 ///
-/// - `T`: State size. Must be ≥ `inputs.len() + 1` (rate = T-1, capacity = 1).
+/// - `T`: State size. Must equal `inputs.len() + 1` (rate = T-1, capacity = 1).
 /// - `F`: Field type. Use [`BnScalar`] for BN254 or [`BlsScalar`] for BLS12-381.
 ///
 /// # Supported Configurations
@@ -72,8 +72,7 @@ impl Field for BlsScalar {
 ///
 /// # Panics
 ///
-/// - if `inputs.is_empty()`
-/// - if `inputs.len() > T - 1` (rate exceeded)
+/// - if `inputs.len() != T - 1`
 /// - if any input value ≥ the field modulus (inputs must be valid field elements)
 ///
 /// # Example

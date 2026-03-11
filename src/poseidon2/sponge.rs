@@ -174,8 +174,13 @@ where
     }
 
     pub(crate) fn absorb(&mut self, inputs: &Vec<U256>) {
-        // Absorb into rate portion of state (positions 0..RATE)
-        assert!(inputs.len() <= Self::RATE);
+        // <= is safe here because IV = input_len << 64 provides domain
+        // separation for different-length inputs. This differs from Poseidon V1
+        // (which uses IV=0 and therefore requires == RATE).
+        assert!(
+            inputs.len() <= Self::RATE,
+            "Poseidon2: inputs.len() must not exceed rate (T - 1)"
+        );
         let modulus = F::modulus(&self.env);
         for i in 0..inputs.len() {
             let v = inputs.get_unchecked(i);

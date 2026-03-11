@@ -82,7 +82,7 @@ let hash2 = sponge.compute_hash(&inputs2);
 
 ## Limitations / Future Work
 
-1. **Multi-round absorption**: Currently, inputs must fit within a single rate (i.e., `inputs.len() <= T - 1`). Future versions will support absorbing inputs larger than the state size across multiple permutation rounds.
+1. **Multi-round absorption**: Currently, for Poseidon, inputs must exactly fill the rate (i.e., `inputs.len() == T - 1`), matching circom's behavior where `nInputs` determines `T = nInputs + 1`. Poseidon2 requires inputs to fit within a single rate (i.e., `inputs.len() <= T - 1`). Future versions will support absorbing inputs larger than the state size across multiple permutation rounds.
 
 2. **Persistent parameters**: Make `PoseidonParams` / `Poseidon2Params` a `#[contracttype]` so they can be stored as contract data and reduce the contract size.
 

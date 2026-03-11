@@ -217,7 +217,10 @@ where
     }
 
     pub(crate) fn absorb(&mut self, inputs: &Vec<U256>) {
-        assert!(inputs.len() <= Self::RATE);
+        assert!(
+            inputs.len() == Self::RATE,
+            "Poseidon: inputs.len() must equal rate (T - 1)"
+        );
         let modulus = F::modulus(&self.env);
         for i in 0..inputs.len() {
             let v = inputs.get_unchecked(i);
@@ -243,15 +246,13 @@ where
     /// implementation](https://github.com/iden3/circomlib/blob/master/circuits/poseidon.circom).
     ///
     /// # Panics
-    /// - if `inputs.is_empty()`. Empty inputs are not allowed because
-    ///   `hash([])` would collide with `hash([0])`. Circom also disallows empty
-    ///   inputs.
-    /// - if `inputs.len() > RATE` (i.e., `T - 1`). For larger inputs,
-    ///   multi-round absorption would be needed (not yet implemented).
+    /// - if `inputs.len() != RATE` (i.e., must equal `T - 1` exactly).
+    ///   This matches circom's Poseidon where `nInputs` determines
+    ///   `T = nInputs + 1`, ensuring the rate is always fully used and
+    ///   preventing suffix-zero collisions from implicit zero-padding.
     /// - if any input value is greater than or equal to the field modulus.
     ///   All inputs must be valid field elements (i.e., less than the modulus).
     pub fn compute_hash(&mut self, inputs: &Vec<U256>) -> U256 {
-        assert!(!inputs.is_empty(), "Poseidon: inputs cannot be empty");
         self.reset_state();
         self.absorb(inputs);
         self.squeeze()
