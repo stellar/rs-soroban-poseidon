@@ -8,7 +8,7 @@ use crate::{
     Field,
 };
 use soroban_sdk::{
-    crypto::{bls12_381::Fr as BlsScalar, BnScalar},
+    crypto::{bls12_381::Bls12381Fr, bn254::Bn254Fr},
     vec, Env, Vec, U256,
 };
 
@@ -46,7 +46,7 @@ pub(crate) struct Poseidon2Params {
 /// # Example
 /// ```ignore
 /// // Create sponge once (initializes parameters)
-/// let mut sponge = Poseidon2Sponge::<4, BnScalar>::new(&env);
+/// let mut sponge = Poseidon2Sponge::<4, Bn254Fr>::new(&env);
 ///
 /// // Compute multiple independent hashes, reusing the same parameters
 /// let hash1 = sponge.compute_hash(&inputs1);
@@ -60,7 +60,7 @@ pub struct Poseidon2Sponge<const T: u32, F: Field> {
 }
 
 // BN254 implementations
-impl Poseidon2Config<2, BnScalar> for Poseidon2Sponge<2, BnScalar> {
+impl Poseidon2Config<2, Bn254Fr> for Poseidon2Sponge<2, Bn254Fr> {
     const ROUNDS_F: u32 = 8;
     const ROUNDS_P: u32 = 56;
     fn get_m_diag(e: &Env) -> Vec<U256> {
@@ -71,7 +71,7 @@ impl Poseidon2Config<2, BnScalar> for Poseidon2Sponge<2, BnScalar> {
     }
 }
 
-impl Poseidon2Config<3, BnScalar> for Poseidon2Sponge<3, BnScalar> {
+impl Poseidon2Config<3, Bn254Fr> for Poseidon2Sponge<3, Bn254Fr> {
     const ROUNDS_F: u32 = 8;
     const ROUNDS_P: u32 = 56;
     fn get_m_diag(e: &Env) -> Vec<U256> {
@@ -82,7 +82,7 @@ impl Poseidon2Config<3, BnScalar> for Poseidon2Sponge<3, BnScalar> {
     }
 }
 
-impl Poseidon2Config<4, BnScalar> for Poseidon2Sponge<4, BnScalar> {
+impl Poseidon2Config<4, Bn254Fr> for Poseidon2Sponge<4, Bn254Fr> {
     const ROUNDS_F: u32 = 8;
     const ROUNDS_P: u32 = 56;
     fn get_m_diag(e: &Env) -> Vec<U256> {
@@ -94,7 +94,7 @@ impl Poseidon2Config<4, BnScalar> for Poseidon2Sponge<4, BnScalar> {
 }
 
 // BLS12-381 implementations
-impl Poseidon2Config<2, BlsScalar> for Poseidon2Sponge<2, BlsScalar> {
+impl Poseidon2Config<2, Bls12381Fr> for Poseidon2Sponge<2, Bls12381Fr> {
     const ROUNDS_F: u32 = 8;
     const ROUNDS_P: u32 = 56;
     fn get_m_diag(e: &Env) -> Vec<U256> {
@@ -105,7 +105,7 @@ impl Poseidon2Config<2, BlsScalar> for Poseidon2Sponge<2, BlsScalar> {
     }
 }
 
-impl Poseidon2Config<3, BlsScalar> for Poseidon2Sponge<3, BlsScalar> {
+impl Poseidon2Config<3, Bls12381Fr> for Poseidon2Sponge<3, Bls12381Fr> {
     const ROUNDS_F: u32 = 8;
     const ROUNDS_P: u32 = 56;
     fn get_m_diag(e: &Env) -> Vec<U256> {
@@ -116,7 +116,7 @@ impl Poseidon2Config<3, BlsScalar> for Poseidon2Sponge<3, BlsScalar> {
     }
 }
 
-impl Poseidon2Config<4, BlsScalar> for Poseidon2Sponge<4, BlsScalar> {
+impl Poseidon2Config<4, Bls12381Fr> for Poseidon2Sponge<4, Bls12381Fr> {
     const ROUNDS_F: u32 = 8;
     const ROUNDS_P: u32 = 56;
     fn get_m_diag(e: &Env) -> Vec<U256> {

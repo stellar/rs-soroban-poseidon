@@ -2,7 +2,7 @@
 
 use soroban_sdk::{
     bytesn,
-    crypto::{bls12_381::Fr as BlsScalar, BnScalar},
+    crypto::{bls12_381::Bls12381Fr, bn254::Bn254Fr},
     symbol_short, Env, Symbol, Vec, U256,
 };
 
@@ -21,7 +21,7 @@ pub trait Field {
     fn modulus(env: &Env) -> U256;
 }
 
-impl Field for BnScalar {
+impl Field for Bn254Fr {
     fn symbol() -> Symbol {
         symbol_short!("BN254")
     }
@@ -39,7 +39,7 @@ impl Field for BnScalar {
     }
 }
 
-impl Field for BlsScalar {
+impl Field for Bls12381Fr {
     fn symbol() -> Symbol {
         symbol_short!("BLS12_381")
     }
@@ -63,7 +63,7 @@ impl Field for BlsScalar {
 /// # Type Parameters
 ///
 /// - `T`: State size. Must equal `inputs.len() + 1` (rate = T-1, capacity = 1).
-/// - `F`: Field type. Use [`BnScalar`] for BN254 or [`BlsScalar`] for BLS12-381.
+/// - `F`: Field type. Use [`Bn254Fr`] for BN254 or [`Bls12381Fr`] for BLS12-381.
 ///
 /// # Supported Configurations
 ///
@@ -78,7 +78,7 @@ impl Field for BlsScalar {
 /// # Example
 ///
 /// ```
-/// use soroban_sdk::{bytesn, crypto::BnScalar, vec, Env, U256};
+/// use soroban_sdk::{bytesn, crypto::bn254::Bn254Fr, vec, Env, U256};
 /// use soroban_poseidon::poseidon_hash;
 ///
 /// let env = Env::default();
@@ -89,7 +89,7 @@ impl Field for BlsScalar {
 ///     U256::from_u32(&env, 1),
 ///     U256::from_u32(&env, 2),
 /// ];
-/// let hash = poseidon_hash::<3, BnScalar>(&env, &inputs);
+/// let hash = poseidon_hash::<3, Bn254Fr>(&env, &inputs);
 ///
 /// // Matches circom's Poseidon([1, 2])
 /// let expected = U256::from_be_bytes(
@@ -107,10 +107,10 @@ impl Field for BlsScalar {
 /// i.e. the sponge state is reset between calls:
 ///
 /// ```
-/// # use soroban_sdk::{crypto::BnScalar, vec, Env, U256};
+/// # use soroban_sdk::{crypto::bn254::Bn254Fr, vec, Env, U256};
 /// # use soroban_poseidon::PoseidonSponge;
 /// # let env = Env::default();
-/// let mut sponge = PoseidonSponge::<3, BnScalar>::new(&env);
+/// let mut sponge = PoseidonSponge::<3, Bn254Fr>::new(&env);
 ///
 /// let inputs1 = vec![&env, U256::from_u32(&env, 1), U256::from_u32(&env, 2)];
 /// let inputs2 = vec![&env, U256::from_u32(&env, 3), U256::from_u32(&env, 4)];
@@ -133,7 +133,7 @@ where
 ///
 /// - `T`: State size. Must be ≥ `inputs.len() + 1`. Common usage is `T=4`
 ///   (rate=3) matching noir's default.
-/// - `F`: Field type. Use [`BnScalar`] for BN254 or [`BlsScalar`] for
+/// - `F`: Field type. Use [`Bn254Fr`] for BN254 or [`Bls12381Fr`] for
 ///   BLS12-381.
 ///
 /// # Supported Configurations
@@ -154,7 +154,7 @@ where
 /// # Example
 ///
 /// ```
-/// use soroban_sdk::{crypto::BnScalar, vec, Env, U256};
+/// use soroban_sdk::{crypto::bn254::Bn254Fr, vec, Env, U256};
 /// use soroban_poseidon::poseidon2_hash;
 ///
 /// let env = Env::default();
@@ -166,7 +166,7 @@ where
 ///     U256::from_u32(&env, 2),
 ///     U256::from_u32(&env, 3),
 /// ];
-/// let hash = poseidon2_hash::<4, BnScalar>(&env, &inputs);
+/// let hash = poseidon2_hash::<4, Bn254Fr>(&env, &inputs);
 /// ```
 ///
 /// # Repeated Hashing
@@ -177,10 +177,10 @@ where
 /// independent, i.e. the sponge state is reset between calls:
 ///
 /// ```
-/// # use soroban_sdk::{crypto::BnScalar, vec, Env, U256};
+/// # use soroban_sdk::{crypto::bn254::Bn254Fr, vec, Env, U256};
 /// # use soroban_poseidon::Poseidon2Sponge;
 /// # let env = Env::default();
-/// let mut sponge = Poseidon2Sponge::<4, BnScalar>::new(&env);
+/// let mut sponge = Poseidon2Sponge::<4, Bn254Fr>::new(&env);
 ///
 /// let inputs1 = vec![&env, U256::from_u32(&env, 1), U256::from_u32(&env, 2)];
 /// let inputs2 = vec![&env, U256::from_u32(&env, 3), U256::from_u32(&env, 4)];

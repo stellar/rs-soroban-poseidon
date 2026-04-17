@@ -9,7 +9,7 @@ use crate::{
     Field,
 };
 use soroban_sdk::{
-    crypto::{bls12_381::Fr as BlsScalar, BnScalar},
+    crypto::{bls12_381::Bls12381Fr, bn254::Bn254Fr},
     vec, Env, Vec, U256,
 };
 
@@ -47,7 +47,7 @@ pub(crate) struct PoseidonParams {
 /// # Example
 /// ```ignore
 /// // Create sponge once (initializes parameters)
-/// let mut sponge = PoseidonSponge::<3, BnScalar>::new(&env);
+/// let mut sponge = PoseidonSponge::<3, Bn254Fr>::new(&env);
 ///
 /// // Compute multiple independent hashes, reusing the same parameters
 /// let hash1 = sponge.compute_hash(&inputs1);
@@ -61,7 +61,7 @@ pub struct PoseidonSponge<const T: u32, F: Field> {
 }
 
 // BN254 implementations
-impl PoseidonConfig<2, BnScalar> for PoseidonSponge<2, BnScalar> {
+impl PoseidonConfig<2, Bn254Fr> for PoseidonSponge<2, Bn254Fr> {
     const ROUNDS_F: u32 = 8;
     const ROUNDS_P: u32 = 56;
     fn get_mds(e: &Env) -> Vec<Vec<U256>> {
@@ -72,7 +72,7 @@ impl PoseidonConfig<2, BnScalar> for PoseidonSponge<2, BnScalar> {
     }
 }
 
-impl PoseidonConfig<3, BnScalar> for PoseidonSponge<3, BnScalar> {
+impl PoseidonConfig<3, Bn254Fr> for PoseidonSponge<3, Bn254Fr> {
     const ROUNDS_F: u32 = 8;
     const ROUNDS_P: u32 = 57;
     fn get_mds(e: &Env) -> Vec<Vec<U256>> {
@@ -83,7 +83,7 @@ impl PoseidonConfig<3, BnScalar> for PoseidonSponge<3, BnScalar> {
     }
 }
 
-impl PoseidonConfig<4, BnScalar> for PoseidonSponge<4, BnScalar> {
+impl PoseidonConfig<4, Bn254Fr> for PoseidonSponge<4, Bn254Fr> {
     const ROUNDS_F: u32 = 8;
     const ROUNDS_P: u32 = 56;
     fn get_mds(e: &Env) -> Vec<Vec<U256>> {
@@ -94,7 +94,7 @@ impl PoseidonConfig<4, BnScalar> for PoseidonSponge<4, BnScalar> {
     }
 }
 
-impl PoseidonConfig<5, BnScalar> for PoseidonSponge<5, BnScalar> {
+impl PoseidonConfig<5, Bn254Fr> for PoseidonSponge<5, Bn254Fr> {
     const ROUNDS_F: u32 = 8;
     const ROUNDS_P: u32 = 60;
     fn get_mds(e: &Env) -> Vec<Vec<U256>> {
@@ -105,7 +105,7 @@ impl PoseidonConfig<5, BnScalar> for PoseidonSponge<5, BnScalar> {
     }
 }
 
-impl PoseidonConfig<6, BnScalar> for PoseidonSponge<6, BnScalar> {
+impl PoseidonConfig<6, Bn254Fr> for PoseidonSponge<6, Bn254Fr> {
     const ROUNDS_F: u32 = 8;
     const ROUNDS_P: u32 = 60;
     fn get_mds(e: &Env) -> Vec<Vec<U256>> {
@@ -117,7 +117,7 @@ impl PoseidonConfig<6, BnScalar> for PoseidonSponge<6, BnScalar> {
 }
 
 // BLS12-381 implementations
-impl PoseidonConfig<2, BlsScalar> for PoseidonSponge<2, BlsScalar> {
+impl PoseidonConfig<2, Bls12381Fr> for PoseidonSponge<2, Bls12381Fr> {
     const ROUNDS_F: u32 = 8;
     const ROUNDS_P: u32 = 56;
     fn get_mds(e: &Env) -> Vec<Vec<U256>> {
@@ -128,7 +128,7 @@ impl PoseidonConfig<2, BlsScalar> for PoseidonSponge<2, BlsScalar> {
     }
 }
 
-impl PoseidonConfig<3, BlsScalar> for PoseidonSponge<3, BlsScalar> {
+impl PoseidonConfig<3, Bls12381Fr> for PoseidonSponge<3, Bls12381Fr> {
     const ROUNDS_F: u32 = 8;
     const ROUNDS_P: u32 = 56;
     fn get_mds(e: &Env) -> Vec<Vec<U256>> {
@@ -139,7 +139,7 @@ impl PoseidonConfig<3, BlsScalar> for PoseidonSponge<3, BlsScalar> {
     }
 }
 
-impl PoseidonConfig<4, BlsScalar> for PoseidonSponge<4, BlsScalar> {
+impl PoseidonConfig<4, Bls12381Fr> for PoseidonSponge<4, Bls12381Fr> {
     const ROUNDS_F: u32 = 8;
     const ROUNDS_P: u32 = 56;
     fn get_mds(e: &Env) -> Vec<Vec<U256>> {
@@ -150,7 +150,7 @@ impl PoseidonConfig<4, BlsScalar> for PoseidonSponge<4, BlsScalar> {
     }
 }
 
-impl PoseidonConfig<5, BlsScalar> for PoseidonSponge<5, BlsScalar> {
+impl PoseidonConfig<5, Bls12381Fr> for PoseidonSponge<5, Bls12381Fr> {
     const ROUNDS_F: u32 = 8;
     const ROUNDS_P: u32 = 56;
     fn get_mds(e: &Env) -> Vec<Vec<U256>> {
@@ -161,7 +161,7 @@ impl PoseidonConfig<5, BlsScalar> for PoseidonSponge<5, BlsScalar> {
     }
 }
 
-impl PoseidonConfig<6, BlsScalar> for PoseidonSponge<6, BlsScalar> {
+impl PoseidonConfig<6, Bls12381Fr> for PoseidonSponge<6, Bls12381Fr> {
     const ROUNDS_F: u32 = 8;
     const ROUNDS_P: u32 = 57;
     fn get_mds(e: &Env) -> Vec<Vec<U256>> {

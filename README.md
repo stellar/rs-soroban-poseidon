@@ -23,26 +23,26 @@ soroban-poseidon = { git = "https://github.com/stellar/rs-soroban-poseidon" }
 
 ```rust
 use soroban_poseidon::poseidon_hash;
-use soroban_sdk::{crypto::BnScalar, vec, Env, U256};
+use soroban_sdk::{crypto::bn254::Bn254Fr, vec, Env, U256};
 
 let env = Env::default();
 let inputs = vec![&env, U256::from_u32(&env, 1), U256::from_u32(&env, 2)];
 
 // Hash 2 inputs with t=3 (rate=2, capacity=1)
-let hash = poseidon_hash::<3, BnScalar>(&env, &inputs);
+let hash = poseidon_hash::<3, Bn254Fr>(&env, &inputs);
 ```
 
 ### Poseidon2 Hash
 
 ```rust
 use soroban_poseidon::poseidon2_hash;
-use soroban_sdk::{crypto::BnScalar, vec, Env, U256};
+use soroban_sdk::{crypto::bn254::Bn254Fr, vec, Env, U256};
 
 let env = Env::default();
 let inputs = vec![&env, U256::from_u32(&env, 1), U256::from_u32(&env, 2), U256::from_u32(&env, 3)];
 
 // Hash 3 inputs with t=4 (rate=3, capacity=1)
-let hash = poseidon2_hash::<4, BnScalar>(&env, &inputs);
+let hash = poseidon2_hash::<4, Bn254Fr>(&env, &inputs);
 ```
 
 ### Reusing Sponge for Multiple Hashes
@@ -51,10 +51,10 @@ For repeated hashing, create a sponge once to reuse the pre-initialized paramete
 
 ```rust
 use soroban_poseidon::PoseidonSponge;
-use soroban_sdk::{crypto::BnScalar, vec, Env, U256};
+use soroban_sdk::{crypto::bn254::Bn254Fr, vec, Env, U256};
 
 let env = Env::default();
-let mut sponge = PoseidonSponge::<3, BnScalar>::new(&env);
+let mut sponge = PoseidonSponge::<3, Bn254Fr>::new(&env);
 
 let inputs1 = vec![&env, U256::from_u32(&env, 1), U256::from_u32(&env, 2)];
 let inputs2 = vec![&env, U256::from_u32(&env, 3), U256::from_u32(&env, 4)];

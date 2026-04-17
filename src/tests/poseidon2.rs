@@ -12,7 +12,7 @@ use crate::{
 };
 use soroban_sdk::{
     bytesn,
-    crypto::{bls12_381::Fr as BlsScalar, BnScalar},
+    crypto::{bls12_381::Bls12381Fr, bn254::Bn254Fr},
     vec, Env, Symbol, U256,
 };
 
@@ -50,7 +50,7 @@ fn test_poseidon2_hash() {
         .into(),
     );
 
-    let mut sponge = Poseidon2Sponge::<4, BnScalar>::new(&env); // t=4, rate=3 matches noir
+    let mut sponge = Poseidon2Sponge::<4, Bn254Fr>::new(&env); // t=4, rate=3 matches noir
     let result = sponge.compute_hash(&inputs);
 
     assert_eq!(result, expected);
@@ -579,7 +579,7 @@ fn test_poseidon2_sponge_compute_hash_bn254_t4() {
         U256::from_u32(&env, 3),
     ];
 
-    let mut sponge = Poseidon2Sponge::<4, BnScalar>::new(&env);
+    let mut sponge = Poseidon2Sponge::<4, Bn254Fr>::new(&env);
     let result = sponge.compute_hash(&inputs);
 
     // Result should be deterministic - hash again and compare
@@ -594,7 +594,7 @@ fn test_poseidon2_sponge_compute_hash_bn254_t3() {
     // 2 inputs fit in rate=2 for t=3
     let inputs = vec![&env, U256::from_u32(&env, 1), U256::from_u32(&env, 2)];
 
-    let mut sponge = Poseidon2Sponge::<3, BnScalar>::new(&env);
+    let mut sponge = Poseidon2Sponge::<3, Bn254Fr>::new(&env);
     let result = sponge.compute_hash(&inputs);
 
     // Result should be deterministic
@@ -609,7 +609,7 @@ fn test_poseidon2_sponge_compute_hash_bn254_t2() {
     // 1 input fits in rate=1 for t=2
     let inputs = vec![&env, U256::from_u32(&env, 1)];
 
-    let mut sponge = Poseidon2Sponge::<2, BnScalar>::new(&env);
+    let mut sponge = Poseidon2Sponge::<2, Bn254Fr>::new(&env);
     let result = sponge.compute_hash(&inputs);
 
     // Result should be deterministic
@@ -628,7 +628,7 @@ fn test_poseidon2_sponge_compute_hash_bls12_381_t4() {
         U256::from_u32(&env, 3),
     ];
 
-    let mut sponge = Poseidon2Sponge::<4, BlsScalar>::new(&env);
+    let mut sponge = Poseidon2Sponge::<4, Bls12381Fr>::new(&env);
     let result = sponge.compute_hash(&inputs);
 
     // Result should be deterministic
@@ -652,10 +652,10 @@ fn test_poseidon2_hash_bn254_t4() {
     ];
 
     // Top-level function should work
-    let result = poseidon2_hash::<4, BnScalar>(&env, &inputs);
+    let result = poseidon2_hash::<4, Bn254Fr>(&env, &inputs);
 
     // Should match sponge directly
-    let mut sponge = Poseidon2Sponge::<4, BnScalar>::new(&env);
+    let mut sponge = Poseidon2Sponge::<4, Bn254Fr>::new(&env);
     let sponge_result = sponge.compute_hash(&inputs);
 
     assert_eq!(result, sponge_result);
@@ -672,10 +672,10 @@ fn test_poseidon2_hash_bls12_381_t4() {
         U256::from_u32(&env, 3),
     ];
 
-    let result = poseidon2_hash::<4, BlsScalar>(&env, &inputs);
+    let result = poseidon2_hash::<4, Bls12381Fr>(&env, &inputs);
 
     // Should match sponge directly
-    let mut sponge = Poseidon2Sponge::<4, BlsScalar>::new(&env);
+    let mut sponge = Poseidon2Sponge::<4, Bls12381Fr>::new(&env);
     let sponge_result = sponge.compute_hash(&inputs);
 
     assert_eq!(result, sponge_result);
@@ -687,9 +687,9 @@ fn test_poseidon2_hash_bn254_t2() {
 
     let inputs = vec![&env, U256::from_u32(&env, 1)];
 
-    let result = poseidon2_hash::<2, BnScalar>(&env, &inputs);
+    let result = poseidon2_hash::<2, Bn254Fr>(&env, &inputs);
 
-    let mut sponge = Poseidon2Sponge::<2, BnScalar>::new(&env);
+    let mut sponge = Poseidon2Sponge::<2, Bn254Fr>::new(&env);
     let sponge_result = sponge.compute_hash(&inputs);
 
     assert_eq!(result, sponge_result);
@@ -701,9 +701,9 @@ fn test_poseidon2_hash_bn254_t3() {
 
     let inputs = vec![&env, U256::from_u32(&env, 1), U256::from_u32(&env, 2)];
 
-    let result = poseidon2_hash::<3, BnScalar>(&env, &inputs);
+    let result = poseidon2_hash::<3, Bn254Fr>(&env, &inputs);
 
-    let mut sponge = Poseidon2Sponge::<3, BnScalar>::new(&env);
+    let mut sponge = Poseidon2Sponge::<3, Bn254Fr>::new(&env);
     let sponge_result = sponge.compute_hash(&inputs);
 
     assert_eq!(result, sponge_result);
@@ -717,7 +717,7 @@ fn test_poseidon2_hash_bn254_t3() {
 fn test_poseidon2_sponge_reuse() {
     let env = Env::default();
 
-    let mut sponge = Poseidon2Sponge::<4, BnScalar>::new(&env);
+    let mut sponge = Poseidon2Sponge::<4, Bn254Fr>::new(&env);
 
     let inputs1 = vec![
         &env,
@@ -756,10 +756,10 @@ fn test_poseidon2_sponge_matches_hash_function() {
     ];
 
     // Using top-level function
-    let hash_result = poseidon2_hash::<4, BnScalar>(&env, &inputs);
+    let hash_result = poseidon2_hash::<4, Bn254Fr>(&env, &inputs);
 
     // Using sponge directly
-    let mut sponge = Poseidon2Sponge::<4, BnScalar>::new(&env);
+    let mut sponge = Poseidon2Sponge::<4, Bn254Fr>::new(&env);
     let sponge_result = sponge.compute_hash(&inputs);
 
     assert_eq!(hash_result, sponge_result);
@@ -798,7 +798,7 @@ fn test_poseidon2_bn254_partial_rate_t4_1_input() {
         .into(),
     );
 
-    let mut sponge = Poseidon2Sponge::<4, BnScalar>::new(&env);
+    let mut sponge = Poseidon2Sponge::<4, Bn254Fr>::new(&env);
     let result = sponge.compute_hash(&inputs);
 
     assert_eq!(result, expected);
@@ -841,7 +841,7 @@ fn test_poseidon2_bn254_partial_rate_t4_2_inputs() {
         .into(),
     );
 
-    let mut sponge = Poseidon2Sponge::<4, BnScalar>::new(&env);
+    let mut sponge = Poseidon2Sponge::<4, Bn254Fr>::new(&env);
     let result = sponge.compute_hash(&inputs);
 
     assert_eq!(result, expected);
@@ -865,7 +865,7 @@ fn test_poseidon2_sponge_inputs_exceed_rate_t4() {
         U256::from_u32(&env, 4),
     ];
 
-    let mut sponge = Poseidon2Sponge::<4, BnScalar>::new(&env);
+    let mut sponge = Poseidon2Sponge::<4, Bn254Fr>::new(&env);
     let _ = sponge.compute_hash(&inputs); // Should panic
 }
 
@@ -893,7 +893,7 @@ fn test_poseidon2_bn254_input_exceeds_modulus() {
         U256::from_u32(&env, 2),
     ];
 
-    let mut sponge = Poseidon2Sponge::<4, BnScalar>::new(&env);
+    let mut sponge = Poseidon2Sponge::<4, Bn254Fr>::new(&env);
     let _ = sponge.compute_hash(&inputs); // Should panic
 }
 
@@ -910,7 +910,7 @@ fn test_poseidon2_bn254_input_equals_modulus() {
 
     let inputs = vec![&env, U256::from_be_bytes(&env, &bn254_modulus.into())];
 
-    let mut sponge = Poseidon2Sponge::<2, BnScalar>::new(&env);
+    let mut sponge = Poseidon2Sponge::<2, Bn254Fr>::new(&env);
     let _ = sponge.compute_hash(&inputs); // Should panic
 }
 
@@ -930,7 +930,7 @@ fn test_poseidon2_bn254_input_below_modulus_accepted() {
         U256::from_be_bytes(&env, &bn254_modulus_minus_1.into()),
     ];
 
-    let mut sponge = Poseidon2Sponge::<2, BnScalar>::new(&env);
+    let mut sponge = Poseidon2Sponge::<2, Bn254Fr>::new(&env);
     // Should not panic - value is valid
     let _ = sponge.compute_hash(&inputs);
 }
@@ -954,7 +954,7 @@ fn test_poseidon2_bls12_381_input_exceeds_modulus() {
         U256::from_be_bytes(&env, &bls_modulus_plus_123.into()),
     ];
 
-    let mut sponge = Poseidon2Sponge::<3, BlsScalar>::new(&env);
+    let mut sponge = Poseidon2Sponge::<3, Bls12381Fr>::new(&env);
     let _ = sponge.compute_hash(&inputs); // Should panic
 }
 
@@ -971,7 +971,7 @@ fn test_poseidon2_bls12_381_input_equals_modulus() {
 
     let inputs = vec![&env, U256::from_be_bytes(&env, &bls_modulus.into())];
 
-    let mut sponge = Poseidon2Sponge::<2, BlsScalar>::new(&env);
+    let mut sponge = Poseidon2Sponge::<2, Bls12381Fr>::new(&env);
     let _ = sponge.compute_hash(&inputs); // Should panic
 }
 
@@ -988,7 +988,7 @@ fn test_poseidon2_bls12_381_input_below_modulus_accepted() {
 
     let inputs = vec![&env, U256::from_be_bytes(&env, &bls_modulus_minus_1.into())];
 
-    let mut sponge = Poseidon2Sponge::<2, BlsScalar>::new(&env);
+    let mut sponge = Poseidon2Sponge::<2, Bls12381Fr>::new(&env);
     // Should not panic - value is valid
     let _ = sponge.compute_hash(&inputs);
 }
@@ -1014,7 +1014,7 @@ fn test_poseidon2_bn254_empty_inputs() {
         .into(),
     );
 
-    let mut sponge = Poseidon2Sponge::<4, BnScalar>::new(&env);
+    let mut sponge = Poseidon2Sponge::<4, Bn254Fr>::new(&env);
 
     let empty_hash = sponge.compute_hash(&empty_inputs);
     assert_eq!(empty_hash, expected_empty);

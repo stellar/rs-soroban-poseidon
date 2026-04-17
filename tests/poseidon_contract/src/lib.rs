@@ -1,7 +1,7 @@
 #![no_std]
 
 use soroban_poseidon::{poseidon_hash, PoseidonSponge};
-use soroban_sdk::{contract, contractimpl, crypto::BnScalar, vec, Env, U256};
+use soroban_sdk::{contract, contractimpl, crypto::bn254::Bn254Fr, vec, Env, U256};
 
 #[contract]
 pub struct PoseidonContract;
@@ -11,12 +11,12 @@ impl PoseidonContract {
     /// Computes a Poseidon hash of [a, b] using the top-level function.
     pub fn hash_two(env: Env, a: U256, b: U256) -> U256 {
         let inputs = vec![&env, a, b];
-        poseidon_hash::<3, BnScalar>(&env, &inputs)
+        poseidon_hash::<3, Bn254Fr>(&env, &inputs)
     }
 
     /// Computes a Poseidon hash of [a, b] using the sponge directly.
     pub fn hash_two_sponge(env: Env, a: U256, b: U256) -> U256 {
-        let mut sponge = PoseidonSponge::<3, BnScalar>::new(&env);
+        let mut sponge = PoseidonSponge::<3, Bn254Fr>::new(&env);
         let inputs = vec![&env, a, b];
         sponge.compute_hash(&inputs)
     }
