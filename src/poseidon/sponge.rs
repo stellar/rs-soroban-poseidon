@@ -176,9 +176,14 @@ impl<const T: u32, F: Field> PoseidonSponge<T, F>
 where
     Self: PoseidonConfig<T, F>,
 {
+    /// Resets the sponge state to all zeros.
+    ///
+    /// Layout (length `T = RATE + 1`):
+    /// - `state[0]`: capacity cell, initialized to `0`. This is also the
+    ///   output cell read by [`squeeze`](Self::squeeze).
+    /// - `state[1..=T-1]`: rate cells, initialized to `0`. Filled by
+    ///   [`absorb`](Self::absorb).
     fn reset_state(&mut self) {
-        // initialize the state with CAPACITY elements (CAPACITY = 1 in our sponge) at the 0-th element
-        // The initial value is 0 for standard Poseidon
         let iv = U256::from_u32(&self.env, 0);
         self.state = vec![&self.env, iv];
         for _ in 0..Self::RATE {
@@ -203,7 +208,7 @@ where
         inner
     }
 
-    pub(crate) fn perform_duplex(&mut self) {
+    fn perform_duplex(&mut self) {
         self.state = self.env.crypto_hazmat().poseidon_permutation(
             &self.state,
             F::symbol(),
@@ -216,20 +221,30 @@ where
         );
     }
 
-    pub(crate) fn absorb(&mut self, inputs: &Vec<U256>) {
+    /// Absorbs `inputs` into the rate portion of the state.
+    ///
+    /// Writes `inputs[i]` into `state[i + 1]`, overwriting the rate cells
+    /// (indices `1..=T-1`). The capacity cell `state[0]` is not touched.
+    ///
+    /// # Panics
+    /// - if `inputs.len() != RATE` (must exactly fill the rate; prevents
+    ///   suffix-zero collisions).
+    fn absorb(&mut self, inputs: &Vec<U256>) {
         assert!(
             inputs.len() == Self::RATE,
             "Poseidon: inputs.len() must equal rate (T - 1)"
         );
-        let modulus = F::modulus(&self.env);
         for i in 0..inputs.len() {
             let v = inputs.get_unchecked(i);
-            assert!(v < modulus, "input exceeds field modulus");
             self.state.set(i + CAPACITY, v);
         }
     }
 
-    pub(crate) fn squeeze(&mut self) -> U256 {
+    /// Permutes the full state and returns the output cell.
+    ///
+    /// Applies the Poseidon permutation to `state[0..=T-1]`, then returns
+    /// `state[0]` — the capacity cell.
+    fn squeeze(&mut self) -> U256 {
         self.perform_duplex();
         self.state.get_unchecked(0)
     }
@@ -242,8 +257,12 @@ where
     /// sponge (vs creating a new one) is reusing the pre-initialized
     /// parameters.
     ///
-    /// This matches [circom's Poseidon
+    /// The sponge construction matches circom's [Poseidon
     /// implementation](https://github.com/iden3/circomlib/blob/master/circuits/poseidon.circom).
+    /// Parameters are field-specific: BN254 matches circomlib; BLS12-381 is
+    /// self-generated to match
+    /// [poseidon-bls12381-circom](https://github.com/jmagan/poseidon-bls12381-circom)
+    /// (circomlib does not ship BLS12-381 parameters).
     ///
     /// # Panics
     /// - if `inputs.len() != RATE` (i.e., must equal `T - 1` exactly).
@@ -253,6 +272,16 @@ where
     /// - if any input value is greater than or equal to the field modulus.
     ///   All inputs must be valid field elements (i.e., less than the modulus).
     pub fn compute_hash(&mut self, inputs: &Vec<U256>) -> U256 {
+        let modulus = F::modulus(&self.env);
+        // Reject non-canonical inputs: `U256` values ≥ modulus would otherwise
+        // be silently reduced inside the underlying field operations, so
+        // without this check `hash([v])` would collide with `hash([v + r])`
+        // for any `v` such that `v + r` fits in U256. The check is required
+        // for collision resistance.
+        assert!(
+            inputs.iter().all(|v| v < modulus),
+            "input exceeds field modulus"
+        );
         self.reset_state();
         self.absorb(inputs);
         self.squeeze()

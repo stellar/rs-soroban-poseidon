@@ -4,7 +4,7 @@ Poseidon and Poseidon2 cryptographic hash functions for Soroban smart contracts.
 
 ## Features
 
-- **Poseidon**: Matches [circom's implementation](https://github.com/iden3/circomlib/blob/master/circuits/poseidon.circom)
+- **Poseidon**: Sponge construction matches [circom's implementation](https://github.com/iden3/circomlib/blob/master/circuits/poseidon.circom). Parameters: BN254 matches circomlib; BLS12-381 is self-generated, matching [poseidon-bls12381-circom](https://github.com/jmagan/poseidon-bls12381-circom) (circomlib does not ship BLS12-381 parameters)
 - **Poseidon2**: Matches [noir's implementation](https://github.com/noir-lang/noir/blob/master/noir_stdlib/src/hash/poseidon2.nr)
 - Support for BN254 and BLS12-381 fields
 
@@ -39,9 +39,15 @@ use soroban_poseidon::poseidon2_hash;
 use soroban_sdk::{crypto::bn254::Bn254Fr, vec, Env, U256};
 
 let env = Env::default();
-let inputs = vec![&env, U256::from_u32(&env, 1), U256::from_u32(&env, 2), U256::from_u32(&env, 3)];
+let inputs = vec![
+	&env,
+	U256::from_u32(&env, 1),
+	U256::from_u32(&env, 2),
+	U256::from_u32(&env, 3),
+	U256::from_u32(&env, 4),
+];
 
-// Hash 3 inputs with t=4 (rate=3, capacity=1)
+// Hash arbitrary-length inputs with t=4 (rate=3, capacity=1)
 let hash = poseidon2_hash::<4, Bn254Fr>(&env, &inputs);
 ```
 
@@ -77,12 +83,12 @@ let hash2 = sponge.compute_hash(&inputs2);
 
 | Field | State Size (T) | Rate | Inputs |
 |-------|---------------|------|--------|
-| BN254 | 2, 3, 4 | T-1 | 1–3 |
-| BLS12-381 | 2, 3, 4 | T-1 | 1–3 |
+| BN254 | 2, 3, 4 | T-1 | any length, including empty |
+| BLS12-381 | 2, 3, 4 | T-1 | any length, including empty |
 
 ## Limitations / Future Work
 
-1. **Multi-round absorption**: Currently, for Poseidon, inputs must exactly fill the rate (i.e., `inputs.len() == T - 1`), matching circom's behavior where `nInputs` determines `T = nInputs + 1`. Poseidon2 requires inputs to fit within a single rate (i.e., `inputs.len() <= T - 1`). Future versions will support absorbing inputs larger than the state size across multiple permutation rounds.
+1. **Poseidon input arity**: Poseidon inputs must exactly fill the rate (i.e., `inputs.len() == T - 1`), matching circom's behavior where `nInputs` determines `T = nInputs + 1`. Poseidon2 supports multi-round absorption for arbitrary-length inputs.
 
 2. **Persistent parameters**: Make `PoseidonParams` / `Poseidon2Params` a `#[contracttype]` so they can be stored as contract data and reduce the contract size.
 

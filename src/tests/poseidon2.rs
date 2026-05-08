@@ -17,14 +17,12 @@ use soroban_sdk::{
 };
 
 // This test matches barretenberg test case for hashing 4 inputs: https://github.com/AztecProtocol/aztec-packages/blob/b95e36c6c1a5a84ba488c720189102ecbb052d2c/barretenberg/cpp/src/barretenberg/crypto/poseidon2/poseidon2.test.cpp#L34
-// TODO: Re-enable once multi-round absorption is implemented
 #[test]
-#[ignore]
 fn test_poseidon2_hash() {
     let env = Env::default();
 
     // Input: 4 identical field elements
-    let input_value = U256::from_be_bytes(
+    let unreduced_input = U256::from_be_bytes(
         &env,
         &bytesn!(
             &env,
@@ -32,6 +30,7 @@ fn test_poseidon2_hash() {
         )
         .into(),
     );
+    let input_value = Bn254Fr::from_u256(unreduced_input).to_u256();
     let inputs = vec![
         &env,
         input_value.clone(),
@@ -766,107 +765,346 @@ fn test_poseidon2_sponge_matches_hash_function() {
 }
 
 // ============================================================================
-// Partial rate tests (inputs.len() < RATE)
+// Partial rate (inputs.len() < RATE) and multi-round absorption tests
 // ============================================================================
+//
+// Each expected value is computed by `noir-lang/poseidon`'s Poseidon2
+// implementation, which the Soroban implementation matches.
 
-// Test hashing 1 input with T=4 (rate=3) - partial rate usage
-// Reference: noir circuit hash([1]) with message_size=1
+macro_rules! noir_t4_case {
+    ($name:ident, $inputs:expr, $expected:literal $(,)?) => {
+        #[test]
+        fn $name() {
+            let env = Env::default();
+            let mut v = vec![&env];
+            for x in $inputs {
+                v.push_back(U256::from_u32(&env, *x));
+            }
+            let expected = U256::from_be_bytes(&env, &bytesn!(&env, $expected).into());
+            let mut sponge = Poseidon2Sponge::<4, Bn254Fr>::new(&env);
+            assert_eq!(sponge.compute_hash(&v), expected);
+        }
+    };
+}
+
+// `n0..n9` cover input lengths 0, 1, 2, 3, 4, 5, 6, 7, 9 — every padding
+// regime up to two mid-stream permutations for T=4, RATE=3.
+noir_t4_case!(
+    test_poseidon2_bn254_t4_n0,
+    &[0u32; 0],
+    0x18dfb8dc9b82229cff974efefc8df78b1ce96d9d844236b496785c698bc6732e
+);
+noir_t4_case!(
+    test_poseidon2_bn254_t4_n1,
+    &[1u32],
+    0x168758332d5b3e2d13be8048c8011b454590e06c44bce7f702f09103eef5a373
+);
+noir_t4_case!(
+    test_poseidon2_bn254_t4_n2,
+    &[1u32, 2],
+    0x038682aa1cb5ae4e0a3f13da432a95c77c5c111f6f030faf9cad641ce1ed7383
+);
+noir_t4_case!(
+    test_poseidon2_bn254_t4_n3,
+    &[1u32, 2, 3],
+    0x23864adb160dddf590f1d3303683ebcb914f828e2635f6e85a32f0a1aecd3dd8
+);
+noir_t4_case!(
+    test_poseidon2_bn254_t4_n4,
+    &[1u32, 2, 3, 4],
+    0x130bf204a32cac1f0ace56c78b731aa3809f06df2731ebcf6b3464a15788b1b9
+);
+noir_t4_case!(
+    test_poseidon2_bn254_t4_n5,
+    &[1u32, 2, 3, 4, 5],
+    0x2247be7014a54d17342a7ef677f58d28877780d203860396967f5d0a18d259db
+);
+noir_t4_case!(
+    test_poseidon2_bn254_t4_n6,
+    &[1u32, 2, 3, 4, 5, 6],
+    0x07f57fcda925c06dc0a311f3f17fa0218e079b514552744a25ba8a74ee8c9e7a
+);
+noir_t4_case!(
+    test_poseidon2_bn254_t4_n7,
+    &[1u32, 2, 3, 4, 5, 6, 7],
+    0x16f929bc0d216df4b05bdc44222463edf2b9791bd949ab926eebda06a502d238
+);
+noir_t4_case!(
+    test_poseidon2_bn254_t4_n9,
+    &[1u32, 2, 3, 4, 5, 6, 7, 8, 9],
+    0x174b592c95a1811beff20ff96e1276cad3d155670a909f90c3658841f0f70fea
+);
+
+// `ref_*` cases re-pin published vectors from noir-lang/poseidon's
+// `src/tests.nr` (third-party cross-check, independently derived).
+noir_t4_case!(
+    test_poseidon2_bn254_t4_ref_1000,
+    &[1000u32],
+    0x16433a80e26a23547e25d61dd95fd5793d1ca2dcd78ae64cd146d3b99a35fa7c
+);
+noir_t4_case!(
+    test_poseidon2_bn254_t4_ref_1000_2000,
+    &[1000u32, 2000],
+    0x118d5a5ecb25dafe99eb45cb196604a23d0b7c0cbd0c2be29e0787e59b7a1d8a
+);
+noir_t4_case!(
+    test_poseidon2_bn254_t4_ref_1000_2000_3000,
+    &[1000u32, 2000, 3000],
+    0x0f1badcd0d52ced816fb6e6826fdf66ada038135d53cbb993f320ca6529223cd
+);
+
+// ============================================================================
+// Equality / inequality assertions across input variations
+// ============================================================================
+//
+// Each test computes Poseidon2 hashes for several closely-related input
+// vectors and asserts the expected equality or inequality between them.
+// Hash values pinned by the macro sweep above are not re-pinned here.
+
+// Compares hash outputs for inputs that differ only in trailing zeros:
+// `hash([])` vs `hash([0])`, then `hash([1])` vs `hash([1, 0])` vs
+// `hash([1, 0, 0])` vs `hash([1, 0, 0, 0])`. Asserts every adjacent pair
+// is unequal, plus `hash([1])` ≠ `hash([1, 0, 0, 0])`.
 #[test]
-fn test_poseidon2_bn254_partial_rate_t4_1_input() {
+fn test_poseidon2_length_distinguishes_inputs() {
     let env = Env::default();
+    let one = U256::from_u32(&env, 1);
+    let zero = U256::from_u32(&env, 0);
 
-    // 1 input with T=4 (rate=3) - only 1/3 of the rate is used
-    let inputs = vec![
-        &env,
-        U256::from_be_bytes(
+    // Anchor at empty: hash([]) (IV = 0) vs hash([0]) (IV = 1 << 64).
+    let h0 = poseidon2_hash::<4, Bn254Fr>(&env, &vec![&env]);
+    let h0_0 = poseidon2_hash::<4, Bn254Fr>(&env, &vec![&env, zero.clone()]);
+    assert_ne!(h0, h0_0);
+
+    // Anchor at 1, sweeping trailing zeros from 0 to 3.
+    let h1 = poseidon2_hash::<4, Bn254Fr>(&env, &vec![&env, one.clone()]);
+    let h2 = poseidon2_hash::<4, Bn254Fr>(&env, &vec![&env, one.clone(), zero.clone()]);
+    let h3 =
+        poseidon2_hash::<4, Bn254Fr>(&env, &vec![&env, one.clone(), zero.clone(), zero.clone()]);
+    let h4 = poseidon2_hash::<4, Bn254Fr>(&env, &vec![&env, one, zero.clone(), zero.clone(), zero]);
+
+    assert_ne!(h1, h2);
+    assert_ne!(h2, h3);
+    assert_ne!(h3, h4);
+    assert_ne!(h1, h4);
+}
+
+// Compares `hash([1, 2, 3, 4])`, `hash([4, 3, 2, 1])`, and `hash([2, 1, 4, 3])`.
+// Asserts every pair is unequal.
+#[test]
+fn test_poseidon2_order_sensitivity() {
+    let env = Env::default();
+    let mk = |a, b, c, d| {
+        vec![
             &env,
-            &bytesn!(
-                &env,
-                0x0000000000000000000000000000000000000000000000000000000000000001
-            )
-            .into(),
-        ),
+            U256::from_u32(&env, a),
+            U256::from_u32(&env, b),
+            U256::from_u32(&env, c),
+            U256::from_u32(&env, d),
+        ]
+    };
+
+    let h_1234 = poseidon2_hash::<4, Bn254Fr>(&env, &mk(1, 2, 3, 4));
+    let h_4321 = poseidon2_hash::<4, Bn254Fr>(&env, &mk(4, 3, 2, 1));
+    let h_2143 = poseidon2_hash::<4, Bn254Fr>(&env, &mk(2, 1, 4, 3));
+
+    assert_ne!(h_1234, h_4321);
+    assert_ne!(h_1234, h_2143);
+    assert_ne!(h_4321, h_2143);
+}
+
+// Compares `hash([1, 2, 3, 4, 5, 6])` against `hash([4, 5, 6, 1, 2, 3])` —
+// the same two RATE-sized blocks in swapped order. Asserts they are unequal.
+#[test]
+fn test_poseidon2_block_boundary_swap() {
+    let env = Env::default();
+    let abc_def = vec![
+        &env,
+        U256::from_u32(&env, 1),
+        U256::from_u32(&env, 2),
+        U256::from_u32(&env, 3),
+        U256::from_u32(&env, 4),
+        U256::from_u32(&env, 5),
+        U256::from_u32(&env, 6),
+    ];
+    let def_abc = vec![
+        &env,
+        U256::from_u32(&env, 4),
+        U256::from_u32(&env, 5),
+        U256::from_u32(&env, 6),
+        U256::from_u32(&env, 1),
+        U256::from_u32(&env, 2),
+        U256::from_u32(&env, 3),
     ];
 
-    // Expected from noir circuit: hash([1], 1)
+    assert_ne!(
+        poseidon2_hash::<4, Bn254Fr>(&env, &abc_def),
+        poseidon2_hash::<4, Bn254Fr>(&env, &def_abc)
+    );
+}
+
+// Compares `hash([1, 2, 3])` (exactly RATE inputs) against `hash([1, 2, 3, 0])`
+// (one extra zero input). Asserts they are unequal, and pins
+// `hash([1, 2, 3, 0])` against the Noir reference (this input is not
+// covered by the macro sweep).
+#[test]
+fn test_poseidon2_rate_boundary_distinguishes_extra_zero() {
+    let env = Env::default();
+    let in_3 = vec![
+        &env,
+        U256::from_u32(&env, 1),
+        U256::from_u32(&env, 2),
+        U256::from_u32(&env, 3),
+    ];
+    let in_3_then_zero = vec![
+        &env,
+        U256::from_u32(&env, 1),
+        U256::from_u32(&env, 2),
+        U256::from_u32(&env, 3),
+        U256::from_u32(&env, 0),
+    ];
+
+    let h_3 = poseidon2_hash::<4, Bn254Fr>(&env, &in_3);
+    let h_3_then_zero = poseidon2_hash::<4, Bn254Fr>(&env, &in_3_then_zero);
+    assert_ne!(h_3, h_3_then_zero);
+
+    let exp_3_then_zero = U256::from_be_bytes(
+        &env,
+        &bytesn!(
+            &env,
+            0x0a9076323d73796b1f52e9159245aa47be3f5e4f75f6a0b006a1ed3d7062775d
+        )
+        .into(),
+    );
+    assert_eq!(h_3_then_zero, exp_3_then_zero);
+}
+
+// On a single sponge, computes `hash([1..7])`, then `hash([5, 6])`, then
+// `hash([1..7])` again. Asserts the `[5, 6]` result equals a fresh-sponge
+// computation of the same input, and that the two `[1..7]` results are
+// equal. (Distinct from `test_poseidon2_sponge_reuse`, which only covers
+// single-block reuse.)
+#[test]
+fn test_poseidon2_sponge_resets_between_multi_round_hashes() {
+    let env = Env::default();
+    let in_long = vec![
+        &env,
+        U256::from_u32(&env, 1),
+        U256::from_u32(&env, 2),
+        U256::from_u32(&env, 3),
+        U256::from_u32(&env, 4),
+        U256::from_u32(&env, 5),
+        U256::from_u32(&env, 6),
+        U256::from_u32(&env, 7),
+    ];
+    let in_short = vec![&env, U256::from_u32(&env, 5), U256::from_u32(&env, 6)];
+
+    let mut shared = Poseidon2Sponge::<4, Bn254Fr>::new(&env);
+    let h_long_first = shared.compute_hash(&in_long);
+    let h_short_after = shared.compute_hash(&in_short);
+    let h_long_again = shared.compute_hash(&in_long);
+
+    assert_eq!(
+        h_short_after,
+        Poseidon2Sponge::<4, Bn254Fr>::new(&env).compute_hash(&in_short)
+    );
+    assert_eq!(h_long_first, h_long_again);
+}
+
+// Compares `hash([0, 0, 0])` (3 zero inputs, T=4) against `hash([])` (empty
+// input). The two cases differ only in IV (`3 << 64` vs `0`) — absorbing
+// zeros leaves the rate cells unchanged. Asserts they are unequal and pins
+// `hash([0, 0, 0])` against the Noir reference (this input is not covered
+// by the macro sweep).
+#[test]
+fn test_poseidon2_zero_inputs_distinguished_by_length() {
+    let env = Env::default();
+    let zero = U256::from_u32(&env, 0);
+    let h_three_zeros =
+        poseidon2_hash::<4, Bn254Fr>(&env, &vec![&env, zero.clone(), zero.clone(), zero.clone()]);
+    let h_empty = poseidon2_hash::<4, Bn254Fr>(&env, &vec![&env]);
+    assert_ne!(h_three_zeros, h_empty);
+
+    let exp_three_zeros = U256::from_be_bytes(
+        &env,
+        &bytesn!(
+            &env,
+            0x2a5de47ed300af27b706aaa14762fc468f5cfc16cd8116eb6b09b0f2643ca2b9
+        )
+        .into(),
+    );
+    assert_eq!(h_three_zeros, exp_three_zeros);
+}
+
+// Computes `hash([m-1, m-1, m-1, m-1])` where `m` is the BN254 scalar
+// modulus — every input is the largest valid field element. Asserts the
+// result matches the Noir reference.
+#[test]
+fn test_poseidon2_modulus_minus_one_multi_round() {
+    let env = Env::default();
+    let m_minus_1 = U256::from_be_bytes(
+        &env,
+        &bytesn!(
+            &env,
+            0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000
+        )
+        .into(),
+    );
+    let inputs = vec![
+        &env,
+        m_minus_1.clone(),
+        m_minus_1.clone(),
+        m_minus_1.clone(),
+        m_minus_1,
+    ];
     let expected = U256::from_be_bytes(
         &env,
         &bytesn!(
             &env,
-            0x168758332d5b3e2d13be8048c8011b454590e06c44bce7f702f09103eef5a373
+            0x0503ef951856c86a9bb84b5208964f3ed61e000c4a28771f71fbce16cb85599b
         )
         .into(),
     );
-
     let mut sponge = Poseidon2Sponge::<4, Bn254Fr>::new(&env);
-    let result = sponge.compute_hash(&inputs);
-
-    assert_eq!(result, expected);
+    assert_eq!(sponge.compute_hash(&inputs), expected);
 }
 
-// Test hashing 2 inputs with T=4 (rate=3) - partial rate usage
-// Reference: noir circuit hash([1, 2]) with message_size=2
+// Hashes `[1, 2]` under T=2, T=3, and T=4. Asserts every pair of outputs
+// is unequal.
 #[test]
-fn test_poseidon2_bn254_partial_rate_t4_2_inputs() {
+fn test_poseidon2_cross_t_divergence() {
     let env = Env::default();
+    let inputs = vec![&env, U256::from_u32(&env, 1), U256::from_u32(&env, 2)];
 
-    // 2 inputs with T=4 (rate=3) - 2/3 of the rate is used
-    let inputs = vec![
-        &env,
-        U256::from_be_bytes(
-            &env,
-            &bytesn!(
-                &env,
-                0x0000000000000000000000000000000000000000000000000000000000000001
-            )
-            .into(),
-        ),
-        U256::from_be_bytes(
-            &env,
-            &bytesn!(
-                &env,
-                0x0000000000000000000000000000000000000000000000000000000000000002
-            )
-            .into(),
-        ),
-    ];
+    let h_t2 = poseidon2_hash::<2, Bn254Fr>(&env, &inputs);
+    let h_t3 = poseidon2_hash::<3, Bn254Fr>(&env, &inputs);
+    let h_t4 = poseidon2_hash::<4, Bn254Fr>(&env, &inputs);
 
-    // Expected from noir circuit: hash([1, 2], 2)
-    let expected = U256::from_be_bytes(
-        &env,
-        &bytesn!(
-            &env,
-            0x038682aa1cb5ae4e0a3f13da432a95c77c5c111f6f030faf9cad641ce1ed7383
-        )
-        .into(),
-    );
-
-    let mut sponge = Poseidon2Sponge::<4, Bn254Fr>::new(&env);
-    let result = sponge.compute_hash(&inputs);
-
-    assert_eq!(result, expected);
+    assert_ne!(h_t2, h_t3);
+    assert_ne!(h_t2, h_t4);
+    assert_ne!(h_t3, h_t4);
 }
 
-// ============================================================================
-// Failure mode tests
-// ============================================================================
-
+// For a 7-input multi-round case, compares `poseidon2_hash::<4, Bn254Fr>`
+// (top-level function) against `Poseidon2Sponge::<4, Bn254Fr>::compute_hash`
+// (sponge directly). Asserts they are equal. (`test_poseidon2_sponge_matches_hash_function`
+// covers the single-block case.)
 #[test]
-#[should_panic(expected = "Poseidon2: inputs.len() must not exceed rate (T - 1)")]
-fn test_poseidon2_sponge_inputs_exceed_rate_t4() {
+fn test_poseidon2_top_level_matches_sponge_multi_round() {
     let env = Env::default();
-
-    // t=4 means rate=3, so 4 inputs should panic
     let inputs = vec![
         &env,
         U256::from_u32(&env, 1),
         U256::from_u32(&env, 2),
         U256::from_u32(&env, 3),
         U256::from_u32(&env, 4),
+        U256::from_u32(&env, 5),
+        U256::from_u32(&env, 6),
+        U256::from_u32(&env, 7),
     ];
-
-    let mut sponge = Poseidon2Sponge::<4, Bn254Fr>::new(&env);
-    let _ = sponge.compute_hash(&inputs); // Should panic
+    let h_top = poseidon2_hash::<4, Bn254Fr>(&env, &inputs);
+    let h_sponge = Poseidon2Sponge::<4, Bn254Fr>::new(&env).compute_hash(&inputs);
+    assert_eq!(h_top, h_sponge);
 }
 
 // ============================================================================
@@ -912,6 +1150,30 @@ fn test_poseidon2_bn254_input_equals_modulus() {
 
     let mut sponge = Poseidon2Sponge::<2, Bn254Fr>::new(&env);
     let _ = sponge.compute_hash(&inputs); // Should panic
+}
+
+// Same input as `test_poseidon2_bn254_input_exceeds_modulus` but routed
+// through the top-level `poseidon2_hash` function instead of the sponge
+// directly. Asserts the panic still fires.
+#[test]
+#[should_panic(expected = "input exceeds field modulus")]
+fn test_poseidon2_hash_bn254_input_exceeds_modulus() {
+    let env = Env::default();
+
+    let modulus_plus_42 = bytesn!(
+        &env,
+        // modulus + 42
+        0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f000002b
+    );
+
+    let inputs = vec![
+        &env,
+        U256::from_be_bytes(&env, &modulus_plus_42.into()),
+        U256::from_u32(&env, 1),
+        U256::from_u32(&env, 2),
+    ];
+
+    let _ = poseidon2_hash::<4, Bn254Fr>(&env, &inputs); // Should panic
 }
 
 // Test that values just below the BN254 modulus are accepted
@@ -975,6 +1237,29 @@ fn test_poseidon2_bls12_381_input_equals_modulus() {
     let _ = sponge.compute_hash(&inputs); // Should panic
 }
 
+// Same input as `test_poseidon2_bls12_381_input_exceeds_modulus` but routed
+// through the top-level `poseidon2_hash` function instead of the sponge
+// directly. Asserts the panic still fires.
+#[test]
+#[should_panic(expected = "input exceeds field modulus")]
+fn test_poseidon2_hash_bls12_381_input_exceeds_modulus() {
+    let env = Env::default();
+
+    let bls_modulus_plus_123 = bytesn!(
+        &env,
+        // modulus + 123
+        0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff0000007c
+    );
+
+    let inputs = vec![
+        &env,
+        U256::from_u32(&env, 1),
+        U256::from_be_bytes(&env, &bls_modulus_plus_123.into()),
+    ];
+
+    let _ = poseidon2_hash::<3, Bls12381Fr>(&env, &inputs); // Should panic
+}
+
 // Test that values just below the BLS12-381 modulus are accepted
 #[test]
 fn test_poseidon2_bls12_381_input_below_modulus_accepted() {
@@ -991,36 +1276,4 @@ fn test_poseidon2_bls12_381_input_below_modulus_accepted() {
     let mut sponge = Poseidon2Sponge::<2, Bls12381Fr>::new(&env);
     // Should not panic - value is valid
     let _ = sponge.compute_hash(&inputs);
-}
-
-// Poseidon2 supports empty inputs (unlike Poseidon) because its IV choice
-// prevents collision
-// - hash([]) uses IV = 0, state = [0, 0, 0, 0]
-// - hash([0]) uses IV = 2^64, state = [2^64, 0, 0, 0] then absorbs 0
-#[test]
-fn test_poseidon2_bn254_empty_inputs() {
-    let env = Env::default();
-
-    let empty_inputs = vec![&env];
-    let zero_inputs = vec![&env, U256::from_u32(&env, 0)];
-
-    // Expected output for empty inputs: first element of permutation([0,0,0,0])
-    let expected_empty = U256::from_be_bytes(
-        &env,
-        &bytesn!(
-            &env,
-            0x18dfb8dc9b82229cff974efefc8df78b1ce96d9d844236b496785c698bc6732e
-        )
-        .into(),
-    );
-
-    let mut sponge = Poseidon2Sponge::<4, Bn254Fr>::new(&env);
-
-    let empty_hash = sponge.compute_hash(&empty_inputs);
-    assert_eq!(empty_hash, expected_empty);
-
-    let zero_hash = sponge.compute_hash(&zero_inputs);
-
-    // Verify domain separation: hash([]) != hash([0])
-    assert_ne!(empty_hash, zero_hash);
 }

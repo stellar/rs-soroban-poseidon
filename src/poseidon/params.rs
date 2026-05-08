@@ -2185,13 +2185,13 @@ pub(crate) fn get_rc_bn254_t_6(e: &Env) -> Vec<Vec<U256>> {
     ]
 }
 
-// Poseidon preset parameters for bls12-382
+// Poseidon preset parameters for bls12-381
 //
-// This pareameters are genereated: `sage generate_params_poseidon.sage 1 0 255
+// These parameters are generated: `sage generate_params_poseidon.sage 1 0 255
 // t 5 128 0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001`
-// `t` is the replaced with the actual value.
+// where `t` is replaced with the actual value.
 //
-// Since the official circomlib does not support bls12-382 parameters. We
+// Since the official circomlib does not support bls12-381 parameters, we
 // generated them ourselves. We do not round up rounds_p -- they are calculated
 // internally (which is 56 for t={2,3,4}). The parameter choices also match
 // https://github.com/jmagan/poseidon-bls12381-circom/tree/main

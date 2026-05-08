@@ -34,8 +34,8 @@ pub(crate) struct Poseidon2Params {
 
 /// A Poseidon2 sponge configured for a specific state size `T` and field `F`.
 ///
-/// This is a single-absorb, single-squeeze sponge. The primary benefit of
-/// creating a sponge instance is to reuse the pre-computed parameters (MDS
+/// This is a multi-round absorb, single-squeeze sponge. The primary benefit
+/// of creating a sponge instance is to reuse the pre-computed parameters (MDS
 /// matrix diagonal and round constants) across multiple independent hash
 /// computations, avoiding repeated parameter initialization.
 ///
@@ -131,14 +131,20 @@ impl<const T: u32, F: Field> Poseidon2Sponge<T, F>
 where
     Self: Poseidon2Config<T, F>,
 {
+    /// Resets the sponge state with the supplied capacity IV.
+    ///
+    /// Layout (length `T = RATE + 1`):
+    /// - `state[0..=RATE-1]`: rate cells, initialized to `0`. Filled by
+    ///   [`absorb`](Self::absorb).
+    /// - `state[T-1]`: capacity cell, initialized to `iv`.
+    ///
+    /// [`compute_hash`](Self::compute_hash) uses
+    /// `iv = (inputs.len() as u128) << 64`.
     fn reset_state(&mut self, iv: U256) {
-        // State layout: [rate elements...][capacity element]
-        // Rate elements are at positions 0..RATE, capacity (IV) is at position T-1 (last)
         self.state = vec![&self.env];
         for _ in 0..Self::RATE {
             self.state.push_back(U256::from_u32(&self.env, 0));
         }
-        // IV goes at the last position (capacity element)
         self.state.push_back(iv);
     }
 
@@ -160,7 +166,7 @@ where
         inner
     }
 
-    pub(crate) fn perform_duplex(&mut self) {
+    fn perform_duplex(&mut self) {
         self.state = self.env.crypto_hazmat().poseidon2_permutation(
             &self.state,
             F::symbol(),
@@ -173,25 +179,34 @@ where
         );
     }
 
-    pub(crate) fn absorb(&mut self, inputs: &Vec<U256>) {
-        // <= is safe here because IV = input_len << 64 provides domain
-        // separation for different-length inputs. This differs from Poseidon V1
-        // (which uses IV=0 and therefore requires == RATE).
-        assert!(
-            inputs.len() <= Self::RATE,
-            "Poseidon2: inputs.len() must not exceed rate (T - 1)"
-        );
-        let modulus = F::modulus(&self.env);
+    /// Absorbs `inputs` into the rate portion of the state in rate-sized
+    /// chunks.
+    ///
+    /// Each input is added into the next rate cell (`state[0..=RATE-1]`). When
+    /// a block fills the rate, the state is permuted before absorbing the next
+    /// block. Unused cells in the final block are left unchanged, which is the
+    /// sponge's zero-padding behavior for the initial block, and the capacity
+    /// cell `state[T-1]` is not touched during absorption.
+    fn absorb(&mut self, inputs: &Vec<U256>) {
+        let mut idx = 0;
         for i in 0..inputs.len() {
-            let v = inputs.get_unchecked(i);
-            assert!(v < modulus, "input exceeds field modulus");
-            self.state.set(i, v);
+            if idx == Self::RATE {
+                self.perform_duplex();
+                idx = 0;
+            }
+            let v = F::from_u256(inputs.get_unchecked(i));
+            let state_element = F::from_u256(self.state.get_unchecked(idx));
+            self.state.set(idx, (state_element + v).to_u256());
+            idx += 1;
         }
     }
 
-    pub(crate) fn squeeze(&mut self) -> U256 {
+    /// Permutes the full state and returns the output cell.
+    ///
+    /// Applies the Poseidon2 permutation, then returns `state[0]` — the first
+    /// rate cell.
+    fn squeeze(&mut self) -> U256 {
         self.perform_duplex();
-        // Output is at position 0
         self.state.get_unchecked(0)
     }
 
@@ -204,15 +219,33 @@ where
     /// parameters.
     ///
     /// The capacity element is initialized to `input.len() << 64`, matching
-    /// [noir's Poseidon2
-    /// implementation](https://github.com/noir-lang/noir/blob/master/noir_stdlib/src/hash/poseidon2.nr).
+    /// [`noir-lang/poseidon`](https://github.com/noir-lang/poseidon/blob/main/src/poseidon2.nr)'s
+    /// Poseidon2 implementation.
+    ///
+    /// # Empty Inputs
+    ///
+    /// Empty input is permitted. With `inputs.is_empty()`, the IV is `0`, no
+    /// inputs are absorbed, and the result is the Poseidon2 permutation of
+    /// the all-zero state — a fixed constant for each `(T, F)`. Domain
+    /// separation from non-empty inputs is preserved by the length-encoded
+    /// IV: `hash([])` ≠ `hash([0])`. (V1 [`PoseidonSponge::compute_hash`]
+    /// rejects empty input — V1 requires `inputs.len() == RATE` and only
+    /// supports `T ≥ 2`, so the minimum input length is 1.)
     ///
     /// # Panics
-    /// - if `inputs.len() > RATE` (i.e., `T - 1`). For larger inputs,
-    ///   multi-round absorption would be needed (not yet implemented).
     /// - if any input value is greater than or equal to the field modulus.
     ///   All inputs must be valid field elements (i.e., less than the modulus).
     pub fn compute_hash(&mut self, inputs: &Vec<U256>) -> U256 {
+        let modulus = F::modulus(&self.env);
+        // Reject non-canonical inputs: `F::from_u256` silently reduces values
+        // ≥ modulus inside `absorb`, so without this check `hash([v])` would
+        // collide with `hash([v + r])` for any `v` such that `v + r` fits in
+        // U256. The check is required for collision resistance.
+        assert!(
+            inputs.iter().all(|v| v < modulus),
+            "input exceeds field modulus"
+        );
+
         // The initial value for the capacity element: input.len() * 2^64 for Poseidon2
         let iv = U256::from_u128(&self.env, (inputs.len() as u128) << 64);
         self.reset_state(iv);

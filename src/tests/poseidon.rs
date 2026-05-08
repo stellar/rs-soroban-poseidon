@@ -778,6 +778,29 @@ fn test_poseidon_bn254_input_exceeds_modulus() {
     let _ = sponge.compute_hash(&inputs); // Should panic
 }
 
+// Same input as `test_poseidon_bn254_input_exceeds_modulus` but routed through
+// the top-level `poseidon_hash` function instead of the sponge directly.
+// Asserts the panic still fires.
+#[test]
+#[should_panic(expected = "input exceeds field modulus")]
+fn test_poseidon_hash_bn254_input_exceeds_modulus() {
+    let env = Env::default();
+
+    let bn254_modulus_plus_42 = bytesn!(
+        &env,
+        // modulus + 42
+        0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f000002b
+    );
+
+    let inputs = vec![
+        &env,
+        U256::from_be_bytes(&env, &bn254_modulus_plus_42.into()),
+        U256::from_u32(&env, 1),
+    ];
+
+    let _ = poseidon_hash::<3, Bn254Fr>(&env, &inputs); // Should panic
+}
+
 // Test that a value exactly equal to the modulus is rejected
 #[test]
 #[should_panic(expected = "input exceeds field modulus")]
@@ -837,6 +860,29 @@ fn test_poseidon_bls12_381_input_exceeds_modulus() {
 
     let mut sponge = PoseidonSponge::<3, Bls12381Fr>::new(&env);
     let _ = sponge.compute_hash(&inputs); // Should panic
+}
+
+// Same input as `test_poseidon_bls12_381_input_exceeds_modulus` but routed
+// through the top-level `poseidon_hash` function instead of the sponge
+// directly. Asserts the panic still fires.
+#[test]
+#[should_panic(expected = "input exceeds field modulus")]
+fn test_poseidon_hash_bls12_381_input_exceeds_modulus() {
+    let env = Env::default();
+
+    let bls_modulus_plus_123 = bytesn!(
+        &env,
+        // modulus + 123
+        0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff0000007c
+    );
+
+    let inputs = vec![
+        &env,
+        U256::from_u32(&env, 1),
+        U256::from_be_bytes(&env, &bls_modulus_plus_123.into()),
+    ];
+
+    let _ = poseidon_hash::<3, Bls12381Fr>(&env, &inputs); // Should panic
 }
 
 // Test that a value exactly equal to the BLS12-381 modulus is rejected
