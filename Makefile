@@ -17,10 +17,10 @@ build: fmt build-libs build-test-wasms
 
 build-libs: fmt
 	cargo build --release --package $(LIB_CRATE)
-	cargo build --release --target wasm32v1-none --package $(LIB_CRATE)
+	stellar contract build --package $(LIB_CRATE)
 
 build-test-wasms: fmt
-	cargo build --release --target wasm32v1-none $(foreach c,$(TEST_CRATES),--package $(c))
+	$(foreach c,$(TEST_CRATES),stellar contract build --package $(c) &&) true
 	@cd target/wasm32v1-none/release/ && \
 		for i in *.wasm ; do \
 			ls -l "$$i"; \
