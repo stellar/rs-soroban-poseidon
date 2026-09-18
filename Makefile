@@ -17,7 +17,7 @@ build: fmt build-libs build-test-wasms
 
 build-libs: fmt
 	cargo build --release --package $(LIB_CRATE)
-	SOROBAN_SDK_BUILD_SYSTEM_SUPPORTS_SPEC_SHAKING_V2=1 cargo check --release --target wasm32v1-none --package $(LIB_CRATE)
+	stellar contract build --package $(LIB_CRATE)
 
 build-test-wasms: fmt
 	$(foreach c,$(TEST_CRATES),stellar contract build --package $(c) &&) true
