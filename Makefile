@@ -15,17 +15,12 @@ test: fmt build
 
 build: fmt build-libs build-test-wasms
 
-# soroban-sdk's build script requires this env var to confirm the build
-# system shakes down the contract spec; set it directly since these wasm
-# builds go through plain cargo rather than `stellar contract build`.
-export SOROBAN_SDK_BUILD_SYSTEM_SUPPORTS_SPEC_SHAKING_V2 = 1
-
 build-libs: fmt
 	cargo build --release --package $(LIB_CRATE)
-	cargo build --release --target wasm32v1-none --package $(LIB_CRATE)
+	stellar contract build --package $(LIB_CRATE)
 
 build-test-wasms: fmt
-	cargo build --release --target wasm32v1-none $(foreach c,$(TEST_CRATES),--package $(c))
+	$(foreach c,$(TEST_CRATES),stellar contract build --package $(c) &&) true
 	@cd target/wasm32v1-none/release/ && \
 		for i in *.wasm ; do \
 			ls -l "$$i"; \

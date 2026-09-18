@@ -116,6 +116,7 @@ jobs:
       with:
         name: cargo-hack
         version: 0.5.28
+    - uses: stellar/stellar-cli@v28.0.0
     - run: cargo version
     - run: make build
 
