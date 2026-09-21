@@ -10,12 +10,15 @@ members = [
 version = "27.0.0"
 authors = ["Stellar Development Foundation <info@stellar.org>"]
 edition = "2021"
-rust-version = "1.91.0"
+rust-version = "1.92.0"
 license = "Apache-2.0"
 
 [workspace.dependencies]
-soroban-sdk = "27.0.0"
+soroban-sdk = "28.0.0"
 soroban-poseidon = { path = "." }
+
+[profile.release]
+overflow-checks = true
 
 [package]
 name = "soroban-poseidon"

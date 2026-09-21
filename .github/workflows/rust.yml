@@ -116,6 +116,7 @@ jobs:
       with:
         name: cargo-hack
         version: 0.5.28
+    - uses: stellar/stellar-cli@v28.0.0
     - run: cargo version
     - run: make build
 
@@ -178,8 +179,9 @@ jobs:
         - os: ubuntu-latest
           target: x86_64-unknown-linux-gnu
           cargo-hack-feature-options: --feature-powerset
-    uses: stellar/actions/.github/workflows/rust-publish-dry-run.yml@main
+    uses: stellar/actions/.github/workflows/rust-publish-dry-run-v2.yml@main
     with:
       runs-on: ${{ matrix.sys.os }}
       target: ${{ matrix.sys.target }}
       cargo-hack-feature-options: ${{ matrix.sys.cargo-hack-feature-options }}
+      env: SOROBAN_SDK_BUILD_SYSTEM_SUPPORTS_SPEC_SHAKING_V2=1
