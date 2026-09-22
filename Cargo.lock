@@ -1402,7 +1402,7 @@ dependencies = [
 
 [[package]]
 name = "soroban-poseidon"
-version = "27.0.0"
+version = "28.0.0"
 dependencies = [
  "soroban-sdk",
 ]
@@ -1586,7 +1586,7 @@ dependencies = [
 
 [[package]]
 name = "test_poseidon2_contract"
-version = "27.0.0"
+version = "28.0.0"
 dependencies = [
  "soroban-poseidon",
  "soroban-sdk",
@@ -1594,7 +1594,7 @@ dependencies = [
 
 [[package]]
 name = "test_poseidon_contract"
-version = "27.0.0"
+version = "28.0.0"
 dependencies = [
  "soroban-poseidon",
  "soroban-sdk",
